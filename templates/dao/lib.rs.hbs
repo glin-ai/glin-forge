@@ -1,0 +1,307 @@
+#![cfg_attr(not(feature = "std"), no_std, no_main)]
+
+#[ink::contract]
+mod {{contract_name}} {
+    use ink::storage::Mapping;
+
+    #[ink(storage)]
+    pub struct {{contract_name_pascal}} {
+        /// DAO members and their voting power
+        members: Mapping<AccountId, u64>,
+        /// Total voting power
+        total_voting_power: u64,
+        /// Proposals
+        proposals: Mapping<ProposalId, Proposal>,
+        /// Votes for each proposal
+        votes: Mapping<(ProposalId, AccountId), Vote>,
+        /// Next proposal ID
+        next_proposal_id: ProposalId,
+        /// Minimum voting power required to create proposal
+        proposal_threshold: u64,
+        /// Voting period in blocks
+        voting_period: u32,
+    }
+
+    pub type ProposalId = u32;
+
+    #[derive(Debug, Clone, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub struct Proposal {
+        pub id: ProposalId,
+        pub proposer: AccountId,
+        pub title: String,
+        pub description: String,
+        pub votes_for: u64,
+        pub votes_against: u64,
+        pub start_block: u32,
+        pub end_block: u32,
+        pub executed: bool,
+        pub status: ProposalStatus,
+    }
+
+    #[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum ProposalStatus {
+        Active,
+        Passed,
+        Rejected,
+        Executed,
+    }
+
+    #[derive(Debug, Clone, PartialEq, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum Vote {
+        For,
+        Against,
+    }
+
+    #[ink(event)]
+    pub struct MemberAdded {
+        #[ink(topic)]
+        member: AccountId,
+        voting_power: u64,
+    }
+
+    #[ink(event)]
+    pub struct ProposalCreated {
+        #[ink(topic)]
+        proposal_id: ProposalId,
+        #[ink(topic)]
+        proposer: AccountId,
+        title: String,
+    }
+
+    #[ink(event)]
+    pub struct VoteCast {
+        #[ink(topic)]
+        proposal_id: ProposalId,
+        #[ink(topic)]
+        voter: AccountId,
+        vote: Vote,
+        voting_power: u64,
+    }
+
+    #[ink(event)]
+    pub struct ProposalExecuted {
+        #[ink(topic)]
+        proposal_id: ProposalId,
+    }
+
+    impl {{contract_name_pascal}} {
+        #[ink(constructor)]
+        pub fn new(proposal_threshold: u64, voting_period: u32) -> Self {
+            let mut members = Mapping::default();
+            let caller = Self::env().caller();
+
+            // Creator gets initial voting power
+            members.insert(caller, &100);
+
+            Self::env().emit_event(MemberAdded {
+                member: caller,
+                voting_power: 100,
+            });
+
+            Self {
+                members,
+                total_voting_power: 100,
+                proposals: Mapping::default(),
+                votes: Mapping::default(),
+                next_proposal_id: 0,
+                proposal_threshold,
+                voting_period,
+            }
+        }
+
+        #[ink(message)]
+        pub fn add_member(&mut self, member: AccountId, voting_power: u64) -> Result<(), Error> {
+            let caller = self.env().caller();
+
+            // Only existing members can add new members
+            if self.get_voting_power(caller) == 0 {
+                return Err(Error::NotMember);
+            }
+
+            if self.members.get(&member).is_some() {
+                return Err(Error::AlreadyMember);
+            }
+
+            self.members.insert(member, &voting_power);
+            self.total_voting_power += voting_power;
+
+            self.env().emit_event(MemberAdded {
+                member,
+                voting_power,
+            });
+
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn create_proposal(&mut self, title: String, description: String) -> Result<ProposalId, Error> {
+            let caller = self.env().caller();
+            let voting_power = self.get_voting_power(caller);
+
+            if voting_power < self.proposal_threshold {
+                return Err(Error::InsufficientVotingPower);
+            }
+
+            let proposal_id = self.next_proposal_id;
+            let current_block = self.env().block_number();
+
+            let proposal = Proposal {
+                id: proposal_id,
+                proposer: caller,
+                title: title.clone(),
+                description,
+                votes_for: 0,
+                votes_against: 0,
+                start_block: current_block,
+                end_block: current_block + self.voting_period,
+                executed: false,
+                status: ProposalStatus::Active,
+            };
+
+            self.proposals.insert(proposal_id, &proposal);
+            self.next_proposal_id += 1;
+
+            self.env().emit_event(ProposalCreated {
+                proposal_id,
+                proposer: caller,
+                title,
+            });
+
+            Ok(proposal_id)
+        }
+
+        #[ink(message)]
+        pub fn cast_vote(&mut self, proposal_id: ProposalId, vote: Vote) -> Result<(), Error> {
+            let caller = self.env().caller();
+            let voting_power = self.get_voting_power(caller);
+
+            if voting_power == 0 {
+                return Err(Error::NotMember);
+            }
+
+            let mut proposal = self.proposals.get(&proposal_id).ok_or(Error::ProposalNotFound)?;
+
+            if self.env().block_number() > proposal.end_block {
+                return Err(Error::VotingEnded);
+            }
+
+            if self.votes.get((proposal_id, caller)).is_some() {
+                return Err(Error::AlreadyVoted);
+            }
+
+            match vote {
+                Vote::For => proposal.votes_for += voting_power,
+                Vote::Against => proposal.votes_against += voting_power,
+            }
+
+            self.votes.insert((proposal_id, caller), &vote);
+            self.proposals.insert(proposal_id, &proposal);
+
+            self.env().emit_event(VoteCast {
+                proposal_id,
+                voter: caller,
+                vote,
+                voting_power,
+            });
+
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn execute_proposal(&mut self, proposal_id: ProposalId) -> Result<(), Error> {
+            let mut proposal = self.proposals.get(&proposal_id).ok_or(Error::ProposalNotFound)?;
+
+            if proposal.executed {
+                return Err(Error::AlreadyExecuted);
+            }
+
+            if self.env().block_number() <= proposal.end_block {
+                return Err(Error::VotingNotEnded);
+            }
+
+            // Check if proposal passed (simple majority)
+            if proposal.votes_for > proposal.votes_against {
+                proposal.status = ProposalStatus::Passed;
+                proposal.executed = true;
+
+                self.env().emit_event(ProposalExecuted { proposal_id });
+            } else {
+                proposal.status = ProposalStatus::Rejected;
+            }
+
+            self.proposals.insert(proposal_id, &proposal);
+
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn get_proposal(&self, proposal_id: ProposalId) -> Option<Proposal> {
+            self.proposals.get(&proposal_id)
+        }
+
+        #[ink(message)]
+        pub fn get_voting_power(&self, member: AccountId) -> u64 {
+            self.members.get(&member).unwrap_or(0)
+        }
+
+        #[ink(message)]
+        pub fn total_proposals(&self) -> u32 {
+            self.next_proposal_id
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum Error {
+        NotMember,
+        AlreadyMember,
+        InsufficientVotingPower,
+        ProposalNotFound,
+        VotingEnded,
+        VotingNotEnded,
+        AlreadyVoted,
+        AlreadyExecuted,
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[ink::test]
+        fn new_works() {
+            let contract = {{contract_name_pascal}}::new(10, 100);
+            let accounts = ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
+            assert_eq!(contract.get_voting_power(accounts.alice), 100);
+        }
+
+        #[ink::test]
+        fn create_proposal_works() {
+            let mut contract = {{contract_name_pascal}}::new(10, 100);
+            let result = contract.create_proposal(
+                "Test Proposal".to_string(),
+                "Test Description".to_string(),
+            );
+            assert!(result.is_ok());
+            assert_eq!(contract.total_proposals(), 1);
+        }
+
+        #[ink::test]
+        fn voting_works() {
+            let mut contract = {{contract_name_pascal}}::new(10, 100);
+            let accounts = ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
+
+            let proposal_id = contract.create_proposal(
+                "Test".to_string(),
+                "Test".to_string(),
+            ).unwrap();
+
+            assert!(contract.cast_vote(proposal_id, Vote::For).is_ok());
+
+            let proposal = contract.get_proposal(proposal_id).unwrap();
+            assert_eq!(proposal.votes_for, 100);
+        }
+    }
+}
