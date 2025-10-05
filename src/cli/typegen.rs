@@ -38,7 +38,7 @@ pub async fn execute(args: TypegenArgs) -> anyhow::Result<()> {
         let network_config = crate::config::load_network(&args.network)?;
 
         // Create client
-        let client = crate::network::create_client(&network_config.rpc).await?;
+        let client = glin_client::create_client(&network_config.rpc).await?;
 
         // Prepare fetcher options
         let cache_dir = crate::contract::metadata_fetcher::get_default_cache_dir()?;

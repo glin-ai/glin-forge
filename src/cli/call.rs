@@ -90,12 +90,12 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
     println!("\n{}", "Connecting to network...".cyan());
 
     // Connect to network
-    let client = crate::network::create_client(&network_config.rpc).await?;
+    let client = glin_client::create_client(&network_config.rpc).await?;
     println!("{} Connected to {}", "✓".green(), network_config.rpc);
 
     // Get signer account
-    let signer = crate::network::get_dev_account(&args.account)?;
-    let signer_address = crate::network::get_address(&signer);
+    let signer = glin_client::get_dev_account(&args.account)?;
+    let signer_address = glin_client::get_address(&signer);
     println!("{} Using account: {}", "✓".green(), signer_address);
 
     // Parse value
@@ -167,7 +167,7 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
 
 /// Wait for transaction to be finalized
 async fn wait_for_finalization(
-    client: &crate::network::GlinClient,
+    client: &glin_client::GlinClient,
     tx_hash: Option<&str>,
 ) -> anyhow::Result<()> {
     use futures::StreamExt;

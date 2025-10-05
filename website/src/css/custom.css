@@ -1,0 +1,73 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* GLIN Brand Colors */
+:root {
+  --ifm-color-primary: #6366f1;
+  --ifm-color-primary-dark: #4f52d9;
+  --ifm-color-primary-darker: #474ad1;
+  --ifm-color-primary-darkest: #2f32b3;
+  --ifm-color-primary-light: #8385f5;
+  --ifm-color-primary-lighter: #9b9df7;
+  --ifm-color-primary-lightest: #c7c8fa;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode colors */
+[data-theme='dark'] {
+  --ifm-color-primary: #818cf8;
+  --ifm-color-primary-dark: #6366f1;
+  --ifm-color-primary-darker: #5b5fe9;
+  --ifm-color-primary-darkest: #3b3fc8;
+  --ifm-color-primary-light: #a5b4fc;
+  --ifm-color-primary-lighter: #c7d2fe;
+  --ifm-color-primary-lightest: #e0e7ff;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom styles */
+.hero--primary {
+  --ifm-hero-background-color: #f8fafc;
+  --ifm-hero-text-color: #1e293b;
+}
+
+[data-theme='dark'] .hero--primary {
+  --ifm-hero-background-color: #0f172a;
+  --ifm-hero-text-color: #f1f5f9;
+}
+
+/* Code blocks */
+code {
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+}
+
+/* Improve readability */
+.markdown > h2 {
+  --ifm-h2-font-size: 2rem;
+  margin-top: 3rem;
+}
+
+.markdown > h3 {
+  --ifm-h3-font-size: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

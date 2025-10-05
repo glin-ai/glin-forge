@@ -24,8 +24,8 @@ pub async fn execute(args: BalanceArgs) -> anyhow::Result<()> {
     let address = if args.account.starts_with('5') {
         args.account.clone()
     } else {
-        let keypair = crate::network::get_dev_account(&args.account)?;
-        crate::network::get_address(&keypair)
+        let keypair = glin_client::get_dev_account(&args.account)?;
+        glin_client::get_address(&keypair)
     };
 
     println!("  {} {}", "Address:".cyan(), address);
@@ -33,7 +33,7 @@ pub async fn execute(args: BalanceArgs) -> anyhow::Result<()> {
     println!("\n{}", "Connecting to network...".cyan());
 
     // Connect to network
-    let client = crate::network::create_client(&network_config.rpc).await?;
+    let client = glin_client::create_client(&network_config.rpc).await?;
     println!("{} Connected", "✓".green());
 
     // Parse account ID

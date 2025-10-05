@@ -53,7 +53,7 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
     println!("\n{}", "Connecting to network...".cyan());
 
     // Connect to network
-    let client = crate::network::create_client(&network_config.rpc).await?;
+    let client = glin_client::create_client(&network_config.rpc).await?;
     println!("{} Connected to {}", "✓".green(), network_config.rpc);
 
     println!("\n{}", "Watching for events...".cyan());
@@ -113,7 +113,7 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
             }
 
             // Get block hash for this number using RPC
-            let rpc = crate::network::create_rpc_client(&network_config.rpc).await?;
+            let rpc = glin_client::create_rpc_client(&network_config.rpc).await?;
 
             let block_hash_opt: Option<subxt::utils::H256> = rpc
                 .chain_get_block_hash(Some(block_num.into()))

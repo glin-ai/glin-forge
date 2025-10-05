@@ -1,0 +1,461 @@
+---
+title: Quick Start
+description: Deploy your first smart contract in 5 minutes
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quick Start Guide
+
+Deploy your first smart contract on GLIN Network in 5 minutes. This guide will walk you through creating, building, and deploying an ERC20 token contract.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- ✅ GLIN Forge installed ([Installation Guide](./installation))
+- ✅ cargo-contract installed ([Prerequisites](./prerequisites))
+- ✅ Basic command line knowledge
+
+## Step 1: Create a New Contract
+
+Create a new token project using the ERC20 template:
+
+```bash
+glin-forge new my-token --template erc20
+```
+
+### Expected Output
+
+```
+Creating new contract project: my-token
+✓ Template: erc20
+✓ Created directory: my-token
+✓ Generated Cargo.toml
+✓ Generated lib.rs
+
+Next steps:
+  cd my-token
+  glin-forge build
+```
+
+### What Just Happened?
+
+GLIN Forge created a new directory with:
+- `Cargo.toml` - Project configuration
+- `lib.rs` - ERC20 contract source code
+- `.gitignore` - Git ignore rules
+
+Navigate to your project:
+
+```bash
+cd my-token
+```
+
+## Step 2: Build the Contract
+
+Compile your contract to WebAssembly:
+
+```bash
+glin-forge build --release
+```
+
+The `--release` flag optimizes the build for smaller size and lower gas costs.
+
+### Expected Output
+
+```
+Building contract...
+   Compiling my-token v0.1.0
+    Finished release [optimized] target(s)
+
+✓ Contract built successfully!
+
+Output files:
+  WASM: ./target/ink/my_token.wasm (23.4 KB)
+  Metadata: ./target/ink/metadata.json
+  Bundle: ./target/ink/my_token.contract
+
+Build info:
+  Code hash: 0x1234...5678
+  Constructors: 1 (new)
+  Messages: 6 (transfer, approve, transferFrom, balanceOf, totalSupply, allowance)
+```
+
+### What's Inside?
+
+Let's peek at the generated files:
+
+<Tabs>
+<TabItem value="wasm" label="WASM (Binary)">
+
+```bash
+ls -lh target/ink/*.wasm
+```
+
+The `.wasm` file is your compiled contract bytecode that runs on-chain.
+
+</TabItem>
+<TabItem value="metadata" label="Metadata (ABI)">
+
+```bash
+cat target/ink/metadata.json | jq '.spec.messages[0]'
+```
+
+The metadata JSON contains your contract's ABI (Application Binary Interface).
+
+</TabItem>
+<TabItem value="bundle" label="Contract Bundle">
+
+The `.contract` file bundles both WASM and metadata for deployment.
+
+</TabItem>
+</Tabs>
+
+## Step 3: Deploy to Testnet
+
+Deploy your contract to GLIN testnet:
+
+```bash
+glin-forge deploy \
+  --network testnet \
+  --account alice \
+  --args "1000000,MyToken,MTK"
+```
+
+### Constructor Arguments
+
+The `--args` parameter passes:
+- `1000000` - Initial supply (1 million tokens)
+- `MyToken` - Token name
+- `MTK` - Token symbol
+
+### Expected Output
+
+```
+Deploying contract...
+
+Contract artifacts:
+  WASM: ./target/ink/my_token.wasm
+  Metadata: ./target/ink/metadata.json
+
+Deployment details:
+  Network: testnet
+  RPC: wss://testnet.glin.network
+  Account: alice (5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY)
+  Constructor: new
+  Arguments: [1000000, "MyToken", "MTK"]
+  Value: 0 GLIN
+
+Proceed with deployment? [y/N]: y
+
+Connecting to network...
+✓ Connected to wss://testnet.glin.network
+
+Gas Estimation:
+  → refTime: 5,000,000,000
+  → proofSize: 2,000,000
+  ℹ Using auto-estimated gas limit
+
+Deploying contract...
+⠋ Waiting for finalization...
+
+✓ Contract deployed successfully!
+
+Contract info:
+  Address: 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty
+  Code Hash: 0x1234...5678
+  Block: #123456
+  Transaction: 0xabcd...ef01
+
+Explorer:
+  https://explorer-testnet.glin.network/contract/5FHneW46...
+
+Save this contract address for later!
+```
+
+### Important
+
+Save your contract address! You'll need it for the next steps:
+
+```bash
+export CONTRACT_ADDR="5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+```
+
+## Step 4: Interact with Your Contract
+
+Now let's interact with the deployed contract.
+
+### Query Total Supply (Read-only)
+
+Query functions don't cost gas:
+
+```bash
+glin-forge query $CONTRACT_ADDR totalSupply
+```
+
+### Expected Output
+
+```
+Querying contract...
+✓ Connected to testnet
+
+Result: 1000000
+```
+
+### Check a Balance
+
+Check Alice's token balance:
+
+```bash
+glin-forge query $CONTRACT_ADDR balanceOf 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+```
+
+### Expected Output
+
+```
+Result: 1000000
+```
+
+Alice has all 1 million tokens since she deployed the contract!
+
+### Transfer Tokens (Transaction)
+
+Transfer 1000 tokens to Bob:
+
+```bash
+glin-forge call $CONTRACT_ADDR transfer \
+  5FrLwHLX9Tfa2e8hXr8PUYvjCPYA5fBxQ6fTVVQRzBqN8kBy \
+  1000 \
+  --account alice \
+  --wait
+```
+
+### Expected Output
+
+```
+Calling contract method: transfer
+✓ Connected to testnet
+✓ Using account: alice
+
+Gas Estimation:
+  → refTime: 1,500,000,000
+  → proofSize: 500,000
+
+Transaction submitted!
+  Hash: 0x9876...5432
+
+⠋ Waiting for finalization...
+
+✓ Transaction finalized!
+  Block: #123457
+  Status: Success
+
+Events:
+  Transfer { from: 5GrwvaEF..., to: 5FrLwHLX..., value: 1000 }
+```
+
+### Verify the Transfer
+
+Check Bob's balance to confirm:
+
+```bash
+glin-forge query $CONTRACT_ADDR balanceOf 5FrLwHLX9Tfa2e8hXr8PUYvjCPYA5fBxQ6fTVVQRzBqN8kBy
+```
+
+```
+Result: 1000
+```
+
+Success! Bob now has 1000 tokens.
+
+## Step 5: Generate TypeScript Types
+
+Generate TypeScript interfaces for frontend integration:
+
+```bash
+glin-forge typegen --output ./types --hooks
+```
+
+### Expected Output
+
+```
+Generating TypeScript types...
+
+✓ Parsed contract metadata
+✓ Generated types: ./types/MyToken.ts
+✓ Generated hooks: ./types/useMyToken.ts
+
+Files created:
+  - types/MyToken.ts (interfaces)
+  - types/useMyToken.ts (React hooks)
+```
+
+### Using Generated Types
+
+<Tabs>
+<TabItem value="types" label="TypeScript Types">
+
+```typescript title="types/MyToken.ts"
+export interface MyTokenContractQuery {
+  balanceOf: (account: string) => Promise<bigint>
+  totalSupply: () => Promise<bigint>
+  allowance: (owner: string, spender: string) => Promise<bigint>
+}
+
+export interface MyTokenContractTx {
+  transfer: (to: string, amount: bigint) => Promise<TxResult>
+  approve: (spender: string, amount: bigint) => Promise<TxResult>
+  transferFrom: (from: string, to: string, amount: bigint) => Promise<TxResult>
+}
+```
+
+</TabItem>
+<TabItem value="hooks" label="React Hooks">
+
+```typescript title="types/useMyToken.ts"
+import { useContract } from '@glin-ai/sdk-react'
+
+export function useMyToken(address: string, signer?: any) {
+  const { contract, loading, error } = useContract({
+    address,
+    abi: metadata,
+    signer,
+  })
+
+  return { contract, loading, error }
+}
+```
+
+</TabItem>
+<TabItem value="usage" label="React Usage">
+
+```tsx title="App.tsx"
+import { useMyToken } from './types/useMyToken'
+
+function TokenBalance({ address }: { address: string }) {
+  const { contract, loading } = useMyToken(address)
+  const [balance, setBalance] = useState<bigint>(0n)
+
+  useEffect(() => {
+    if (contract) {
+      contract.query.totalSupply().then(setBalance)
+    }
+  }, [contract])
+
+  if (loading) return <div>Loading...</div>
+
+  return <div>Total Supply: {balance.toString()}</div>
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Congratulations!
+
+You've successfully:
+
+- ✅ Created a new ERC20 token contract
+- ✅ Built and compiled it to WebAssembly
+- ✅ Deployed it to GLIN testnet
+- ✅ Queried contract state
+- ✅ Executed a token transfer
+- ✅ Generated TypeScript types for frontend use
+
+## What's Next?
+
+### Learn More
+
+- [First Contract Tutorial](./first-contract) - Build a contract from scratch
+- [CLI Reference](../cli-reference/overview) - Explore all commands
+- [Frontend Integration](../guides/frontend-integration) - Build a dApp
+
+### Advanced Topics
+
+- [Deploy to Mainnet](../guides/deploying-mainnet) - Production deployment
+- [Contract Verification](../advanced/contract-verification) - Verify on explorer
+- [Gas Optimization](../guides/gas-optimization) - Reduce costs
+
+### Example Projects
+
+- [ERC20 Token](../examples/erc20-token) - Full token implementation
+- [NFT Collection](../examples/nft-collection) - ERC721 NFTs
+- [DAO Governance](../examples/dao-governance) - Decentralized governance
+
+## Common Next Steps
+
+<Tabs>
+<TabItem value="customize" label="Customize Your Token">
+
+Edit `lib.rs` to add custom functionality:
+
+```rust
+// Add a mint function
+#[ink(message)]
+pub fn mint(&mut self, to: AccountId, amount: Balance) -> Result<()> {
+    let caller = self.env().caller();
+    // Add admin check...
+    self.total_supply += amount;
+    self.balances.insert(to, amount);
+    Ok(())
+}
+```
+
+Then rebuild and redeploy.
+
+</TabItem>
+<TabItem value="test" label="Add Tests">
+
+Run the included tests:
+
+```bash
+glin-forge test
+```
+
+Add your own tests:
+
+```rust
+#[ink::test]
+fn transfer_works() {
+    let mut contract = MyToken::new(1000, "Test".into(), "TST".into());
+    let accounts = ink::env::test::default_accounts::<ink::env::DefaultEnvironment>();
+
+    assert!(contract.transfer(accounts.bob, 100).is_ok());
+    assert_eq!(contract.balance_of(accounts.bob), 100);
+}
+```
+
+</TabItem>
+<TabItem value="frontend" label="Build a Frontend">
+
+Create a React app:
+
+```bash
+npx create-react-app my-token-dapp --template typescript
+cd my-token-dapp
+npm install @glin-ai/sdk-react
+```
+
+Copy your generated types:
+
+```bash
+cp -r ../my-token/types ./src/
+```
+
+Build your UI! See [Frontend Integration Guide](../guides/frontend-integration).
+
+</TabItem>
+</Tabs>
+
+## Getting Help
+
+Need assistance?
+
+- Check [Troubleshooting](../troubleshooting/common-errors) for common issues
+- Join our [Discord](https://discord.gg/glin) community
+- Browse [Examples](../examples/erc20-token) for reference code
+- Open an issue on [GitHub](https://github.com/glin-ai/glin-forge/issues)
+
+Happy building! 🚀

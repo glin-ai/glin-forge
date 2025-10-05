@@ -60,7 +60,7 @@ pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
 
     // Read files
     let wasm_bytes = std::fs::read(&wasm_path)?;
-    let _metadata_json = std::fs::read_to_string(&metadata_path)?;
+    let metadata_json = std::fs::read_to_string(&metadata_path)?;
 
     println!("\n{}", "Verifying contract code...".cyan());
 
@@ -75,7 +75,7 @@ pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
     // Verify the code hash matches on-chain
     println!("\n{}", "Checking on-chain...".cyan());
 
-    let client = crate::network::create_client(&network_config.rpc).await?;
+    let client = glin_client::create_client(&network_config.rpc).await?;
 
     // Query the code storage to verify it exists
     let code_storage_query = subxt::dynamic::storage(
@@ -104,19 +104,68 @@ pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
         let verification_url = format!("{}/api/verify", explorer);
         println!("  {} {}", "Endpoint:".cyan(), verification_url);
 
-        // TODO: Implement actual HTTP POST to explorer API
-        // Would need reqwest or similar HTTP client
-        println!("\n{} Contract metadata prepared for verification", "✓".green().bold());
+        // Prepare verification payload
+        let payload = serde_json::json!({
+            "address": args.address,
+            "code_hash": code_hash_hex,
+            "wasm": hex::encode(&wasm_bytes),
+            "metadata": serde_json::from_str::<serde_json::Value>(&metadata_json)?,
+            "compiler_version": args.compiler_version.unwrap_or_else(|| "latest".to_string()),
+            "network": args.network,
+        });
 
-        println!("\n{}", "Verification info:".bold());
-        println!(
-            "  {} {}/contract/{}#code",
-            "View on Explorer:".cyan(),
-            explorer,
-            args.address
-        );
-        println!("  {} {}", "Status:".cyan(), "Pending".yellow());
-        println!("\n{}", "Verification usually takes 1-2 minutes...".dimmed());
+        // Submit verification request
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()?;
+
+        match client.post(&verification_url).json(&payload).send().await {
+            Ok(response) if response.status().is_success() => {
+                println!("\n{} Contract verification submitted!", "✓".green().bold());
+
+                // Try to parse response for verification ID
+                if let Ok(resp_json) = response.json::<serde_json::Value>().await {
+                    if let Some(verification_id) = resp_json.get("verification_id") {
+                        println!("  {} {}", "Verification ID:".cyan(), verification_id);
+                    }
+                    if let Some(status) = resp_json.get("status") {
+                        println!("  {} {}", "Status:".cyan(), status);
+                    }
+                }
+
+                println!("\n{}", "Verification info:".bold());
+                println!(
+                    "  {} {}/contract/{}#code",
+                    "View on Explorer:".cyan(),
+                    explorer,
+                    args.address
+                );
+                println!("\n{}", "Verification usually completes in 1-2 minutes...".dimmed());
+            }
+            Ok(response) => {
+                let status = response.status();
+                let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+
+                println!("\n{} Verification submission failed", "✗".red().bold());
+                println!("  {} {}", "Status:".cyan(), status);
+                println!("  {} {}", "Error:".cyan(), error_text);
+
+                anyhow::bail!("Explorer returned status {}: {}", status, error_text);
+            }
+            Err(e) => {
+                println!("\n{} Failed to connect to explorer", "✗".red().bold());
+                println!("  {} {}", "Error:".cyan(), e);
+
+                // Provide helpful fallback instructions
+                println!("\n{}", "Manual verification:".bold());
+                println!("  1. Visit: {}/verify", explorer);
+                println!("  2. Enter contract address: {}", args.address);
+                println!("  3. Upload WASM: {}", wasm_path.display());
+                println!("  4. Upload metadata: {}", metadata_path.display());
+
+                anyhow::bail!("Could not connect to explorer API: {}", e);
+            }
+        }
     } else {
         anyhow::bail!("No explorer configured for network '{}'", args.network);
     }

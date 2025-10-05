@@ -1298,6 +1298,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
+name = "glin-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "glin-types",
+ "serde",
+ "serde_json",
+ "subxt",
+ "subxt-core",
+ "subxt-signer",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "glin-contracts"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs",
+ "glin-client",
+ "glin-types",
+ "hex",
+ "ink_metadata",
+ "parity-scale-codec",
+ "reqwest",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-core-hashing",
+ "subxt",
+ "subxt-core",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "glin-forge"
 version = "0.1.0"
 dependencies = [
@@ -1306,6 +1343,9 @@ dependencies = [
  "colored",
  "dirs",
  "futures",
+ "glin-client",
+ "glin-contracts",
+ "glin-types",
  "handlebars",
  "hex",
  "indicatif",
@@ -1324,6 +1364,18 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "toml",
+]
+
+[[package]]
+name = "glin-types"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "subxt",
 ]
 
 [[package]]

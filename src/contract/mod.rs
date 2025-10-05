@@ -1,14 +1,12 @@
 use anyhow::{Result, Context};
 use subxt_signer::sr25519::Keypair;
-use crate::network::GlinClient;
+use glin_client::GlinClient;
 use subxt::utils::AccountId32;
 use scale::Encode;
 use ink_metadata::InkProject;
 
-pub mod chain_info;
-pub mod encoding;
-pub mod metadata;
-pub mod metadata_fetcher;
+// Re-export SDK modules for convenience
+pub use glin_contracts::{chain_info, encoding, metadata, metadata_fetcher};
 
 #[derive(Debug)]
 pub struct DeployResult {
@@ -363,7 +361,7 @@ pub async fn query_contract(
     );
 
     // Create RPC client for state_call
-    let rpc = crate::network::create_rpc_client(rpc_url).await?;
+    let rpc = glin_client::create_rpc_client(rpc_url).await?;
 
     // Encode call parameters
     let encoded = call_params.encode();
@@ -380,12 +378,12 @@ pub async fn query_contract(
     let exec_result = decode_contract_exec_result(&result_bytes)?;
 
     // Get the message spec to find return type
-    let message = self::metadata::get_message_spec(metadata, method)?;
-    let return_type_spec = self::metadata::get_message_return_type(message);
+    let message = metadata::get_message_spec(metadata, method)?;
+    let return_type_spec = metadata::get_message_return_type(message);
 
     // Decode the return data
     let decoded_data = if let Some(data) = exec_result.data {
-        self::encoding::decode_result(&data, Some(return_type_spec), metadata)?
+        encoding::decode_result(&data, Some(return_type_spec), metadata)?
     } else {
         serde_json::Value::Null
     };
@@ -467,17 +465,17 @@ fn encode_constructor_call(
 ) -> Result<Vec<u8>> {
     // Get constructor spec (default to "new" if not specified)
     let constructor = if let Some(name) = constructor_name {
-        self::metadata::get_constructor_spec(metadata, name)?
+        metadata::get_constructor_spec(metadata, name)?
     } else {
-        self::metadata::get_default_constructor(metadata)?
+        metadata::get_default_constructor(metadata)?
     };
 
     // Get selector
-    let selector = self::metadata::get_constructor_selector(constructor);
+    let selector = metadata::get_constructor_selector(constructor);
 
     // Encode arguments
     let param_specs = constructor.args();
-    let encoded_args = self::encoding::encode_args(args, param_specs, metadata)?;
+    let encoded_args = encoding::encode_args(args, param_specs, metadata)?;
 
     // Combine selector + encoded args
     let mut result = selector.to_bytes().to_vec();
@@ -493,14 +491,14 @@ fn encode_method_call(
     metadata: &InkProject,
 ) -> Result<Vec<u8>> {
     // Get message spec
-    let message = self::metadata::get_message_spec(metadata, method)?;
+    let message = metadata::get_message_spec(metadata, method)?;
 
     // Get selector
-    let selector = self::metadata::get_message_selector(message);
+    let selector = metadata::get_message_selector(message);
 
     // Encode arguments
     let param_specs = message.args();
-    let encoded_args = self::encoding::encode_args(args, param_specs, metadata)?;
+    let encoded_args = encoding::encode_args(args, param_specs, metadata)?;
 
     // Combine selector + encoded args
     let mut result = selector.to_bytes().to_vec();

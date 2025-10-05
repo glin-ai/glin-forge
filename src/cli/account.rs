@@ -53,8 +53,8 @@ async fn list_accounts() -> anyhow::Result<()> {
     let dev_accounts = vec!["alice", "bob", "charlie", "dave", "eve", "ferdie"];
 
     for (idx, account) in dev_accounts.iter().enumerate() {
-        let pair = crate::network::get_dev_account(account)?;
-        let address = crate::network::get_address(&pair);
+        let pair = glin_client::get_dev_account(account)?;
+        let address = glin_client::get_address(&pair);
 
         println!(
             "  {}. {} {}",
@@ -92,7 +92,7 @@ async fn generate_account(name: &str) -> anyhow::Result<()> {
     // Generate keypair from mnemonic
     use subxt_signer::sr25519::Keypair;
     let keypair = Keypair::from_phrase(&mnemonic, None)?;
-    let address = crate::network::get_address(&keypair);
+    let address = glin_client::get_address(&keypair);
 
     println!("\n{} Account generated!", "✓".green().bold());
     println!();
@@ -112,8 +112,8 @@ async fn generate_account(name: &str) -> anyhow::Result<()> {
 async fn import_account(name: &str, seed: &str) -> anyhow::Result<()> {
     println!("{}", format!("Importing account: {}", name).cyan().bold());
 
-    let pair = crate::network::account_from_seed(seed)?;
-    let address = crate::network::get_address(&pair);
+    let pair = glin_client::account_from_seed(seed)?;
+    let address = glin_client::get_address(&pair);
 
     println!("\n{} Account imported!", "✓".green().bold());
     println!();
@@ -128,9 +128,9 @@ async fn show_account(name: &str) -> anyhow::Result<()> {
     println!("{}", format!("Account: {}", name).cyan().bold());
 
     // Try development accounts first
-    match crate::network::get_dev_account(name) {
+    match glin_client::get_dev_account(name) {
         Ok(pair) => {
-            let address = crate::network::get_address(&pair);
+            let address = glin_client::get_address(&pair);
 
             println!();
             println!("{}", "Account Details:".bold());

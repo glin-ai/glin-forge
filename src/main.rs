@@ -3,9 +3,8 @@ use colored::Colorize;
 
 mod cli;
 mod config;
-mod contract;
-mod network;
 mod codegen;
+mod contract;
 
 #[derive(Parser)]
 #[command(name = "glin-forge")]

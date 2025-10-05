@@ -57,7 +57,7 @@ pub async fn execute(args: QueryArgs) -> anyhow::Result<()> {
     println!("\n{}", "Connecting to network...".cyan());
 
     // Connect to network
-    let client = crate::network::create_client(&network_config.rpc).await?;
+    let client = glin_client::create_client(&network_config.rpc).await?;
     println!("{} Connected to {}", "✓".green(), network_config.rpc);
 
     // Execute query

@@ -9,6 +9,11 @@ repository = "https://github.com/glin-ai/glin-forge"
 keywords = ["blockchain", "smart-contracts", "ink", "substrate", "cli"]
 
 [dependencies]
+# GLIN SDK
+glin-client = { path = "../glin-sdk-rust/glin-client" }
+glin-contracts = { path = "../glin-sdk-rust/glin-contracts" }
+glin-types = { path = "../glin-sdk-rust/glin-types" }
+
 # CLI framework
 clap = { version = "4.5", features = ["derive", "cargo"] }
 colored = "2.1"
