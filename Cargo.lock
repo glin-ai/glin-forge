@@ -1299,7 +1299,9 @@ checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
 name = "glin-client"
-version = "0.1.0"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02736170099bedf78858980d57b0ccecc046caa28c2fb73a9996f2cbede1212a"
 dependencies = [
  "anyhow",
  "futures",
@@ -1315,7 +1317,9 @@ dependencies = [
 
 [[package]]
 name = "glin-contracts"
-version = "0.1.0"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "346b2c39272ed0bef9ac47b7e447cf135e6ecde632c205cb83a532d246e29c96"
 dependencies = [
  "anyhow",
  "dirs",
@@ -1368,7 +1372,9 @@ dependencies = [
 
 [[package]]
 name = "glin-types"
-version = "0.1.0"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98fff9bdff65c0301b96abeb1019113c8b2a6331298073a5fc085b01ed11a506"
 dependencies = [
  "hex",
  "parity-scale-codec",
