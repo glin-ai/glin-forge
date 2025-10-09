@@ -189,6 +189,15 @@ fn format_number(n: u64) -> String {
 }
 
 fn find_contract_artifacts(path: &str) -> anyhow::Result<(PathBuf, PathBuf)> {
+    // First check artifacts/ directory (Hardhat-style)
+    let artifacts_dir = PathBuf::from(path).join("artifacts");
+    if artifacts_dir.exists() {
+        if let Ok((wasm, metadata)) = search_artifacts(&artifacts_dir) {
+            return Ok((wasm, metadata));
+        }
+    }
+
+    // Fallback to target/ink/ directory
     let target_dir = PathBuf::from(path).join("target/ink");
 
     if !target_dir.exists() {
@@ -198,26 +207,44 @@ fn find_contract_artifacts(path: &str) -> anyhow::Result<(PathBuf, PathBuf)> {
         );
     }
 
-    // Find .wasm and .json files
+    search_artifacts(&target_dir)
+}
+
+/// Search for contract artifacts in a directory
+fn search_artifacts(dir: &PathBuf) -> anyhow::Result<(PathBuf, PathBuf)> {
+    // Find .wasm and .json files (recursive search for artifacts/)
     let mut wasm_file = None;
     let mut json_file = None;
 
-    for entry in std::fs::read_dir(&target_dir)? {
-        let entry = entry?;
-        let path = entry.path();
+    fn search_dir(
+        dir: &std::path::Path,
+        wasm_file: &mut Option<PathBuf>,
+        json_file: &mut Option<PathBuf>,
+    ) -> std::io::Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
 
-        if path.extension().and_then(|s| s.to_str()) == Some("wasm") {
-            wasm_file = Some(path);
-        } else if path.extension().and_then(|s| s.to_str()) == Some("json") {
-            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-            if !file_name.ends_with(".contract") {
-                json_file = Some(path);
+            if path.is_dir() {
+                search_dir(&path, wasm_file, json_file)?;
+            } else if path.is_file() {
+                if path.extension().and_then(|s| s.to_str()) == Some("wasm") {
+                    *wasm_file = Some(path.clone());
+                } else if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                    if !file_name.ends_with(".contract") {
+                        *json_file = Some(path.clone());
+                    }
+                }
             }
         }
+        Ok(())
     }
+
+    search_dir(dir, &mut wasm_file, &mut json_file)?;
 
     match (wasm_file, json_file) {
         (Some(wasm), Some(json)) => Ok((wasm, json)),
-        _ => anyhow::bail!("Could not find contract artifacts in {}", target_dir.display()),
+        _ => anyhow::bail!("Could not find contract artifacts in {}", dir.display()),
     }
 }

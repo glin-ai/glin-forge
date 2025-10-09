@@ -5,6 +5,7 @@ mod cli;
 mod config;
 mod codegen;
 mod contract;
+mod rpc;
 
 #[derive(Parser)]
 #[command(name = "glin-forge")]
@@ -64,6 +65,18 @@ enum Commands {
 
     /// Manage networks
     Network(cli::network::NetworkArgs),
+
+    /// Run a TypeScript deployment script
+    Run(cli::run::RunArgs),
+
+    /// Analyze contract code for security and optimization
+    Analyze(cli::analyze::AnalyzeArgs),
+
+    /// Start an interactive console (REPL)
+    Console(cli::console::ConsoleArgs),
+
+    /// Clean build artifacts
+    Clean(cli::clean::CleanArgs),
 }
 
 #[tokio::main]
@@ -87,6 +100,13 @@ async fn main() -> anyhow::Result<()> {
         Commands::Account(args) => cli::account::execute(args).await,
         Commands::Balance(args) => cli::balance::execute(args).await,
         Commands::Network(args) => cli::network::execute(args).await,
+        Commands::Run(args) => cli::run::execute(args).await,
+        Commands::Analyze(args) => {
+            cli::analyze::run(args)?;
+            Ok(())
+        }
+        Commands::Console(args) => cli::console::execute(args).await,
+        Commands::Clean(args) => cli::clean::execute(args).await,
     };
 
     if let Err(e) = result {

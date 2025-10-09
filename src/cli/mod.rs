@@ -14,3 +14,7 @@ pub mod config;
 pub mod account;
 pub mod balance;
 pub mod network;
+pub mod run;
+pub mod analyze;
+pub mod console;
+pub mod clean;

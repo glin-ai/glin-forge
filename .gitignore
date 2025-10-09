@@ -1,1 +1,50 @@
+# Rust / Cargo
 /target
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Contract artifacts (keep in target/)
+*.wasm
+*.contract
+
+# Test artifacts
+/test-output
+/coverage
+
+# Binary distributions
+/releases

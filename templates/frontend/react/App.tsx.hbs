@@ -1,0 +1,101 @@
+import { useState, useEffect } from 'react';
+import { getContract, Network, Signer } from '@glin-forge/sdk';
+import './App.css';
+
+function App() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [contractAddress, setContractAddress] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if running with glin-forge run
+    const rpcPort = process.env.GLIN_FORGE_RPC_PORT;
+    setIsConnected(!!rpcPort);
+  }, []);
+
+  const handleDeploy = async () => {
+    setLoading(true);
+    try {
+      // TODO: Replace with actual contract deployment
+      // const contract = await deploy({
+      //   wasm: './target/ink/{{contract_name}}.wasm',
+      //   metadata: './target/ink/metadata.json',
+      //   args: [],
+      //   network: Network.Local,
+      //   account: Signer.Alice,
+      // });
+      // setContractAddress(contract.address);
+
+      console.log('Deploy contract here');
+    } catch (error) {
+      console.error('Deployment failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <h1>{{project_name}}</h1>
+        <p>GLIN Network dApp</p>
+      </header>
+
+      <main className="App-main">
+        {isConnected ? (
+          <div className="status connected">
+            <span className="indicator">●</span>
+            Connected to glin-forge
+          </div>
+        ) : (
+          <div className="status disconnected">
+            <span className="indicator">●</span>
+            Not connected - Run with: glin-forge run scripts/dev.ts
+          </div>
+        )}
+
+        <div className="card">
+          <h2>Contract Deployment</h2>
+          {contractAddress ? (
+            <div className="contract-info">
+              <p>Contract deployed at:</p>
+              <code>{contractAddress}</code>
+            </div>
+          ) : (
+            <button
+              onClick={handleDeploy}
+              disabled={loading || !isConnected}
+              className="primary-button"
+            >
+              {loading ? 'Deploying...' : 'Deploy Contract'}
+            </button>
+          )}
+        </div>
+
+        <div className="card">
+          <h2>Quick Start</h2>
+          <ol className="steps">
+            <li>Run <code>glin-forge build</code> to compile your contract</li>
+            <li>Run <code>glin-forge run scripts/deploy.ts</code> to deploy</li>
+            <li>Update the contract address in <code>src/config.ts</code></li>
+            <li>Start building your dApp!</li>
+          </ol>
+        </div>
+
+        <div className="links">
+          <a href="https://docs.glin.ai" target="_blank" rel="noopener noreferrer">
+            📚 Documentation
+          </a>
+          <a href="https://github.com/glin-ai/glin-forge" target="_blank" rel="noopener noreferrer">
+            💻 GitHub
+          </a>
+          <a href="https://discord.gg/glin" target="_blank" rel="noopener noreferrer">
+            💬 Discord
+          </a>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;

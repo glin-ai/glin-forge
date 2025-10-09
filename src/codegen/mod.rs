@@ -2,6 +2,8 @@
 
 pub mod hooks;
 pub mod metadata;
+pub mod type_resolver;
+pub mod typescript;
 pub mod types;
 
 // Re-export main functions for convenience
@@ -10,4 +12,6 @@ pub use metadata::{
     extract_constructors, extract_contract_name, extract_contract_version, extract_messages,
     ArgumentInfo, ConstructorInfo, MessageInfo,
 };
+pub use type_resolver::{TypeResolver, TypeScriptType, UnionVariant};
+pub use typescript::generate_typescript_module;
 pub use types::generate_typescript_types;

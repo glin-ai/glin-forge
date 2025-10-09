@@ -15,9 +15,31 @@ pub struct BuildArgs {
     /// Verify the contract after building
     #[arg(long)]
     pub verify: bool,
+
+    /// Copy build outputs to artifacts directory (Hardhat-style)
+    #[arg(long, default_value = "artifacts")]
+    pub artifacts_dir: Option<String>,
+
+    /// Skip artifacts copy (only use target/ink)
+    #[arg(long)]
+    pub no_artifacts: bool,
+
+    /// Build all contracts in the workspace
+    #[arg(long)]
+    pub all: bool,
 }
 
 pub async fn execute(args: BuildArgs) -> anyhow::Result<()> {
+    // If --all flag is set, find and build all contracts
+    if args.all {
+        return build_all_contracts(&args).await;
+    }
+
+    build_single_contract(&args)
+}
+
+/// Build a single contract
+fn build_single_contract(args: &BuildArgs) -> anyhow::Result<()> {
     println!("{}", "Building contract...".cyan().bold());
 
     // Check if cargo-contract is installed
@@ -74,6 +96,18 @@ pub async fn execute(args: BuildArgs) -> anyhow::Result<()> {
     if args.verify {
         println!("\n{}", "Verifying contract...".cyan());
         verify_built_contract(&target_dir)?;
+    }
+
+    // Copy to artifacts directory (Hardhat-style)
+    if !args.no_artifacts {
+        if let Some(artifacts_dir) = &args.artifacts_dir {
+            copy_to_artifacts(&args.path, artifacts_dir)?;
+
+            println!("\n{} Artifacts copied to {}/",
+                "✓".green().bold(),
+                artifacts_dir
+            );
+        }
     }
 
     Ok(())
@@ -153,6 +187,173 @@ fn verify_built_contract(target_dir: &std::path::Path) -> anyhow::Result<()> {
     }
 
     println!("\n{} Contract verification passed", "✓".green().bold());
+
+    Ok(())
+}
+
+/// Copy build artifacts to artifacts directory (Hardhat-style)
+fn copy_to_artifacts(project_path: &str, artifacts_dir: &str) -> anyhow::Result<()> {
+    // Find contract name from Cargo.toml
+    let cargo_toml_path = std::path::Path::new(project_path).join("Cargo.toml");
+    let cargo_toml_content = std::fs::read_to_string(&cargo_toml_path)?;
+    let toml_value: toml::Value = toml::from_str(&cargo_toml_content)?;
+    let contract_name = toml_value
+        .get("package")
+        .and_then(|p| p.get("name"))
+        .and_then(|n| n.as_str())
+        .ok_or_else(|| anyhow::anyhow!("Contract name not found in Cargo.toml"))?;
+
+    // Resolve to absolute path
+    let base_path = std::env::current_dir()?.join(project_path);
+
+    // Check for workspace - look for target/ink in current dir and parent dirs
+    let mut target_dir = base_path.join("target/ink");
+    let mut artifacts_base = base_path.clone();
+
+    if !target_dir.exists() {
+        // Try parent directory (workspace case)
+        if let Some(parent_path) = base_path.parent() {
+            let workspace_target = parent_path.join("target/ink");
+            if workspace_target.exists() {
+                target_dir = workspace_target;
+                artifacts_base = parent_path.to_path_buf();
+            }
+        }
+    }
+
+    // Source directory with contract files
+    let source_dir = target_dir.join(contract_name);
+
+    if !source_dir.exists() {
+        anyhow::bail!(
+            "Build artifacts not found at {}. Run build first.",
+            source_dir.display()
+        );
+    }
+
+    // Create artifacts/<contract_name>/ directory (in workspace root if workspace)
+    let artifacts_path = artifacts_base
+        .join(artifacts_dir)
+        .join(contract_name);
+    std::fs::create_dir_all(&artifacts_path)?;
+
+    // Copy all 3 files: .json, .wasm, .contract
+    let mut files_copied = 0;
+    for entry in std::fs::read_dir(&source_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                let ext_str = ext.to_str().unwrap_or("");
+                if ext_str == "json" || ext_str == "wasm" || ext_str == "contract" {
+                    let file_name = path.file_name().unwrap();
+                    let dest = artifacts_path.join(file_name);
+                    std::fs::copy(&path, &dest)?;
+                    files_copied += 1;
+                }
+            }
+        }
+    }
+
+    if files_copied == 0 {
+        anyhow::bail!("No artifacts found to copy from {}", source_dir.display());
+    }
+
+    Ok(())
+}
+
+/// Build all contracts in a workspace
+async fn build_all_contracts(args: &BuildArgs) -> anyhow::Result<()> {
+    use std::path::Path;
+
+    println!("{}", "Building all contracts in workspace...".cyan().bold());
+    println!();
+
+    let base_path = Path::new(&args.path);
+    let contracts_dir = base_path.join("contracts");
+
+    if !contracts_dir.exists() {
+        anyhow::bail!(
+            "No contracts directory found. Expected at: {}",
+            contracts_dir.display()
+        );
+    }
+
+    // Find all contract directories (directories with Cargo.toml containing [package])
+    let mut contract_paths = Vec::new();
+
+    for entry in std::fs::read_dir(&contracts_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            let cargo_toml = path.join("Cargo.toml");
+            if cargo_toml.exists() {
+                // Verify it's a contract project
+                let content = std::fs::read_to_string(&cargo_toml)?;
+                if content.contains("[package]") {
+                    contract_paths.push(path);
+                }
+            }
+        }
+    }
+
+    if contract_paths.is_empty() {
+        println!("{} No contracts found in {}/", "⚠".yellow(), contracts_dir.display());
+        return Ok(());
+    }
+
+    println!("Found {} contract(s) to build:", contract_paths.len());
+    for path in &contract_paths {
+        println!("  {} {}", "→".cyan(), path.file_name().unwrap().to_string_lossy());
+    }
+    println!();
+
+    let mut built_count = 0;
+    let mut failed = Vec::new();
+
+    for contract_path in &contract_paths {
+        let contract_name = contract_path.file_name().unwrap().to_string_lossy();
+        println!("{} Building {}...", "▸".cyan().bold(), contract_name.bold());
+
+        // Build this contract
+        let build_args = BuildArgs {
+            path: contract_path.to_string_lossy().to_string(),
+            release: args.release,
+            verify: args.verify,
+            artifacts_dir: args.artifacts_dir.clone(),
+            no_artifacts: args.no_artifacts,
+            all: false,
+        };
+
+        match build_single_contract(&build_args) {
+            Ok(_) => {
+                built_count += 1;
+                println!();
+            }
+            Err(e) => {
+                failed.push((contract_name.to_string(), e.to_string()));
+                println!("{} Failed to build {}: {}\n", "✗".red().bold(), contract_name, e);
+            }
+        }
+    }
+
+    println!();
+    println!("{}", "=== Build Summary ===".bold());
+    println!("  {} {}/{} contracts built successfully",
+        "✓".green(),
+        built_count,
+        contract_paths.len()
+    );
+
+    if !failed.is_empty() {
+        println!("  {} {} failed:", "✗".red(), failed.len());
+        for (name, error) in &failed {
+            println!("    • {}: {}", name, error);
+        }
+        anyhow::bail!("Some contracts failed to build");
+    }
 
     Ok(())
 }

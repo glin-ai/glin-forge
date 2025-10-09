@@ -1,0 +1,23 @@
+{
+  "name": "nft-marketplace",
+  "version": "1.0.0",
+  "description": "NFT marketplace example for glin-forge",
+  "scripts": {
+    "build": "glin-forge build",
+    "test": "glin-forge test",
+    "deploy": "glin-forge run scripts/deploy.ts",
+    "console": "glin-forge console"
+  },
+  "keywords": [
+    "glin",
+    "nft",
+    "marketplace",
+    "psp34"
+  ],
+  "author": "GLIN Network",
+  "license": "MIT",
+  "devDependencies": {
+    "@glin-forge/sdk": "^0.1.0",
+    "@glin-forge/testing": "^0.1.0"
+  }
+}

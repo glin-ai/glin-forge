@@ -1,0 +1,49 @@
+{
+  "name": "glin-forge",
+  "version": "0.2.0",
+  "description": "Hardhat-style development environment for GLIN Network smart contracts",
+  "main": "index.js",
+  "bin": {
+    "glin-forge": "./bin/glin-forge.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/download-binary.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "glin",
+    "blockchain",
+    "smart-contracts",
+    "ink",
+    "hardhat",
+    "cli"
+  ],
+  "author": "GLIN Network",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glin-ai/glin-forge"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "tar": "^6.2.0"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "index.js",
+    "README.md"
+  ],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

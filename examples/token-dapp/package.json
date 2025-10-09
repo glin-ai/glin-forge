@@ -1,0 +1,33 @@
+{
+  "name": "token-dapp",
+  "version": "1.0.0",
+  "description": "Full-stack token dApp example for glin-forge",
+  "scripts": {
+    "build": "glin-forge build",
+    "test": "glin-forge test",
+    "deploy": "glin-forge run scripts/deploy.ts",
+    "deploy:testnet": "glin-forge run scripts/deploy.ts --network testnet",
+    "console": "glin-forge console",
+    "analyze": "glin-forge analyze contracts/",
+    "typegen": "glin-forge typegen",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "glin",
+    "smart-contracts",
+    "token",
+    "dapp"
+  ],
+  "author": "GLIN Network",
+  "license": "MIT",
+  "devDependencies": {
+    "@glin-forge/sdk": "^0.1.0",
+    "@glin-forge/testing": "^0.1.0",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.6"
+  }
+}

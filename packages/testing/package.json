@@ -1,0 +1,39 @@
+{
+  "name": "@glin-forge/testing",
+  "version": "0.2.0",
+  "description": "Testing utilities for glin-forge smart contracts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "glin",
+    "testing",
+    "smart-contracts",
+    "blockchain",
+    "ink"
+  ],
+  "author": "GLIN Network",
+  "license": "MIT",
+  "dependencies": {
+    "@polkadot/api": "^10.9.1",
+    "@polkadot/util": "^12.3.2",
+    "@polkadot/util-crypto": "^12.3.2",
+    "@polkadot/keyring": "^12.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.2",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "@glin-forge/sdk": "^0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@glin-forge/sdk": {
+      "optional": true
+    }
+  }
+}

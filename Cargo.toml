@@ -1,6 +1,6 @@
 [package]
 name = "glin-forge"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["GLIN AI <dev@glin.ai>"]
 description = "Smart contract development CLI for GLIN Network - Build, deploy, and interact with ink! smart contracts"
@@ -22,6 +22,8 @@ glin-types = "0.1"
 clap = { version = "4.5", features = ["derive", "cargo"] }
 colored = "2.1"
 indicatif = "0.17"
+dialoguer = "0.11"
+console = "0.15"
 
 # Substrate & Contract interaction
 subxt = "0.44"
@@ -55,6 +57,14 @@ reqwest = { version = "0.12", features = ["json"] }
 
 # Template rendering
 handlebars = "5.1"
+
+# JSON-RPC server for SDK bridge
+jsonrpc-core = "18.0"
+jsonrpc-http-server = "18.0"
+jsonrpc-derive = "18.0"
+
+# Process execution
+which = "7.0"
 
 [dev-dependencies]
 tempfile = "3.13"
