@@ -382,33 +382,37 @@ fn analyze_security(path: &Path, analysis: &FileAnalysis) -> Result<Vec<Security
     // 1. Unchecked arithmetic operations
     if (content.contains(" + ") || content.contains(" - ") || content.contains(" * "))
         && !content.contains("checked_add")
-            && !content.contains("checked_sub")
-            && !content.contains("checked_mul")
-        {
-            issues.push(SecurityIssue {
-                severity: "medium".to_string(),
-                category: "Arithmetic".to_string(),
-                description: "Potential integer overflow/underflow".to_string(),
-                file: path.to_string_lossy().to_string(),
-                line: None,
-                recommendation: "Use checked arithmetic operations (checked_add, checked_sub, etc.)".to_string(),
-            });
-        }
+        && !content.contains("checked_sub")
+        && !content.contains("checked_mul")
+    {
+        issues.push(SecurityIssue {
+            severity: "medium".to_string(),
+            category: "Arithmetic".to_string(),
+            description: "Potential integer overflow/underflow".to_string(),
+            file: path.to_string_lossy().to_string(),
+            line: None,
+            recommendation: "Use checked arithmetic operations (checked_add, checked_sub, etc.)"
+                .to_string(),
+        });
+    }
 
     // 2. Missing access control on payable functions
     for func in &analysis.functions {
-        if func.is_payable && func.visibility == "public"
-            && !content.contains("only_owner") && !content.contains("require!") {
-                issues.push(SecurityIssue {
-                    severity: "high".to_string(),
-                    category: "Access Control".to_string(),
-                    description: format!("Payable function '{}' lacks access control", func.name),
-                    file: path.to_string_lossy().to_string(),
-                    line: None,
-                    recommendation: "Add access control checks to prevent unauthorized calls"
-                        .to_string(),
-                });
-            }
+        if func.is_payable
+            && func.visibility == "public"
+            && !content.contains("only_owner")
+            && !content.contains("require!")
+        {
+            issues.push(SecurityIssue {
+                severity: "high".to_string(),
+                category: "Access Control".to_string(),
+                description: format!("Payable function '{}' lacks access control", func.name),
+                file: path.to_string_lossy().to_string(),
+                line: None,
+                recommendation: "Add access control checks to prevent unauthorized calls"
+                    .to_string(),
+            });
+        }
     }
 
     // 3. Unsafe unwrap usage

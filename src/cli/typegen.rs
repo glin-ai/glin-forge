@@ -154,14 +154,13 @@ fn find_metadata_in_artifacts() -> anyhow::Result<Option<PathBuf>> {
                 if let Some(found) = search_json(&path)? {
                     return Ok(Some(found));
                 }
-            } else if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                    // Skip .contract files
-                    if !file_name.ends_with(".contract") {
-                        return Ok(Some(path));
-                    }
+            } else if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                // Skip .contract files
+                if !file_name.ends_with(".contract") {
+                    return Ok(Some(path));
                 }
+            }
         }
         Ok(None)
     }

@@ -92,7 +92,8 @@ impl TypeScriptGenerator {
   ContractEvent,
 } from '@glin-forge/sdk';
 
-"#.to_string()
+"#
+        .to_string()
     }
 
     /// Generate custom type definitions (structs and enums)
