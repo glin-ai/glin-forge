@@ -84,17 +84,15 @@ impl TypeScriptGenerator {
 
     /// Generate import statements
     fn generate_imports(&self) -> String {
-        format!(
-            r#"import type {{
+        r#"import type {
   Contract,
   Transaction,
   Network,
   Signer,
   ContractEvent,
-}} from '@glin-forge/sdk';
+} from '@glin-forge/sdk';
 
-"#
-        )
+"#.to_string()
     }
 
     /// Generate custom type definitions (structs and enums)
@@ -173,7 +171,7 @@ impl TypeScriptGenerator {
 
             for ts_type in custom_types {
                 output.push_str(&self.generate_type_definition(&ts_type)?);
-                output.push_str("\n");
+                output.push('\n');
             }
         }
 
@@ -207,7 +205,11 @@ impl TypeScriptGenerator {
 
                 Ok(output)
             }
-            TypeScriptType::Union { name, variants, docs } => {
+            TypeScriptType::Union {
+                name,
+                variants,
+                docs,
+            } => {
                 let mut output = String::new();
 
                 // JSDoc
@@ -352,7 +354,10 @@ impl TypeScriptGenerator {
         }
 
         // Generate query methods interface
-        output.push_str(&format!("export interface {}Queries {{\n", self.contract_name));
+        output.push_str(&format!(
+            "export interface {}Queries {{\n",
+            self.contract_name
+        ));
 
         for msg in queries {
             output.push_str(&self.generate_method_signature((*msg).clone(), false)?);
@@ -361,7 +366,10 @@ impl TypeScriptGenerator {
         output.push_str("}\n\n");
 
         // Generate transaction methods interface
-        output.push_str(&format!("export interface {}Transactions {{\n", self.contract_name));
+        output.push_str(&format!(
+            "export interface {}Transactions {{\n",
+            self.contract_name
+        ));
 
         for msg in transactions {
             output.push_str(&self.generate_method_signature((*msg).clone(), true)?);
@@ -398,7 +406,7 @@ impl TypeScriptGenerator {
         // Arguments
         if let Some(args) = msg["args"].as_array() {
             if !args.is_empty() {
-                output.push_str("\n");
+                output.push('\n');
                 for arg in args {
                     let arg_name = arg["label"].as_str().unwrap_or("arg");
                     let type_id = arg["type"]["type"].as_u64().unwrap_or(0) as u32;
@@ -413,7 +421,7 @@ impl TypeScriptGenerator {
             }
         }
 
-        output.push_str(")");
+        output.push(')');
 
         // Return type
         let return_type = if is_tx {
@@ -499,7 +507,10 @@ impl TypeScriptGenerator {
             }
 
             // Events union type
-            output.push_str(&format!("export interface {}Events {{\n", self.contract_name));
+            output.push_str(&format!(
+                "export interface {}Events {{\n",
+                self.contract_name
+            ));
             for event in events {
                 let event_name = event["label"].as_str().unwrap_or("Event");
                 output.push_str(&format!("  {}: {}Event;\n", event_name, event_name));
@@ -559,15 +570,23 @@ export interface {} {{
         if let Some(v3) = self.metadata.get("V3") {
             v3["spec"].clone()
         } else {
-            self.metadata.get("spec").cloned().unwrap_or_else(|| self.metadata.clone())
+            self.metadata
+                .get("spec")
+                .cloned()
+                .unwrap_or_else(|| self.metadata.clone())
         }
     }
 
     /// Check if two types are equal (for deduplication)
     fn types_equal(&self, a: &TypeScriptType, b: &TypeScriptType) -> bool {
         match (a, b) {
-            (TypeScriptType::Interface { name: n1, .. }, TypeScriptType::Interface { name: n2, .. }) => n1 == n2,
-            (TypeScriptType::Union { name: n1, .. }, TypeScriptType::Union { name: n2, .. }) => n1 == n2,
+            (
+                TypeScriptType::Interface { name: n1, .. },
+                TypeScriptType::Interface { name: n2, .. },
+            ) => n1 == n2,
+            (TypeScriptType::Union { name: n1, .. }, TypeScriptType::Union { name: n2, .. }) => {
+                n1 == n2
+            }
             _ => false,
         }
     }

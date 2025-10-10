@@ -43,7 +43,7 @@ pub async fn execute(args: BalanceArgs) -> anyhow::Result<()> {
     let account_query = subxt::dynamic::storage(
         "System",
         "Account",
-        vec![subxt::dynamic::Value::from_bytes(&account_id.0)],
+        vec![subxt::dynamic::Value::from_bytes(account_id.0)],
     );
 
     let account_info = client
@@ -116,7 +116,8 @@ fn parse_account_id(address: &str) -> anyhow::Result<AccountId32> {
     // Try hex format
     if address.starts_with("0x") {
         let bytes = hex::decode(address.trim_start_matches("0x"))?;
-        let array: [u8; 32] = bytes.try_into()
+        let array: [u8; 32] = bytes
+            .try_into()
             .map_err(|_| anyhow::anyhow!("Address must be 32 bytes"))?;
         return Ok(AccountId32(array));
     }

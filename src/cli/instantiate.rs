@@ -111,8 +111,7 @@ pub async fn execute(args: InstantiateArgs) -> anyhow::Result<()> {
     println!("{} Using account: {}", "✓".green(), signer_address);
 
     // Parse value
-    let value_u128 = args.value.parse::<u128>()
-        .unwrap_or(0);
+    let value_u128 = args.value.parse::<u128>().unwrap_or(0);
 
     // Gas estimation
     println!("\n{}", "Gas Estimation:".bold());
@@ -120,10 +119,14 @@ pub async fn execute(args: InstantiateArgs) -> anyhow::Result<()> {
 
     // Simulated gas estimation
     let estimated_gas = 2_500_000_000u64; // 2.5B refTime
-    let estimated_proof = 800_000u64;     // 800K proofSize
+    let estimated_proof = 800_000u64; // 800K proofSize
 
     println!("  {} refTime: {}", "→".cyan(), format_number(estimated_gas));
-    println!("  {} proofSize: {}", "→".cyan(), format_number(estimated_proof));
+    println!(
+        "  {} proofSize: {}",
+        "→".cyan(),
+        format_number(estimated_proof)
+    );
 
     if args.gas_limit.is_none() {
         println!("  {} Using auto-estimated gas limit", "ℹ".blue());
@@ -141,7 +144,8 @@ pub async fn execute(args: InstantiateArgs) -> anyhow::Result<()> {
         None,
         value_u128,
         &signer,
-    ).await?;
+    )
+    .await?;
 
     if result.success {
         println!(
@@ -154,34 +158,30 @@ pub async fn execute(args: InstantiateArgs) -> anyhow::Result<()> {
             println!("  {} {}", "Address:".cyan(), addr);
 
             if let Some(explorer) = network_config.explorer {
-                println!(
-                    "  {} {}/contract/{}",
-                    "Explorer:".cyan(),
-                    explorer,
-                    addr
-                );
+                println!("  {} {}/contract/{}", "Explorer:".cyan(), explorer, addr);
             }
 
             println!();
             println!("{}", "Next steps:".bold());
             println!("  {} Call contract:", "→".cyan());
-            println!("    {} glin-forge call {} <method> --account {}",
+            println!(
+                "    {} glin-forge call {} <method> --account {}",
                 "".dimmed(),
                 addr,
                 args.account
             );
             println!("  {} Query contract:", "→".cyan());
-            println!("    {} glin-forge query {} <method>",
-                "".dimmed(),
-                addr
-            );
+            println!("    {} glin-forge query {} <method>", "".dimmed(), addr);
         }
 
         if let Some(hash) = result.tx_hash {
             println!("\n  {} {}", "Transaction:".cyan(), hash);
         }
     } else {
-        anyhow::bail!("Instantiation failed: {}", result.error.unwrap_or_else(|| "Unknown error".to_string()));
+        anyhow::bail!(
+            "Instantiation failed: {}",
+            result.error.unwrap_or_else(|| "Unknown error".to_string())
+        );
     }
 
     Ok(())
@@ -221,5 +221,8 @@ fn find_metadata_file(path: &str) -> anyhow::Result<PathBuf> {
         }
     }
 
-    anyhow::bail!("Could not find metadata JSON file in {}", target_dir.display())
+    anyhow::bail!(
+        "Could not find metadata JSON file in {}",
+        target_dir.display()
+    )
 }

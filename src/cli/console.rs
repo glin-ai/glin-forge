@@ -48,7 +48,10 @@ pub async fn execute(args: ConsoleArgs) -> Result<()> {
             .cyan()
             .bold()
     );
-    println!("{}", format!("RPC endpoint: {}", network_config.rpc).dimmed());
+    println!(
+        "{}",
+        format!("RPC endpoint: {}", network_config.rpc).dimmed()
+    );
 
     if let Some(contract_addr) = &args.contract {
         println!(
@@ -118,7 +121,8 @@ fn load_network_config(network: &str) -> Result<NetworkConfig> {
 
 fn create_repl_script(args: &ConsoleArgs, network_config: &NetworkConfig) -> Result<String> {
     let artifacts_path = PathBuf::from(&args.artifacts_path);
-    let artifacts_path_str = artifacts_path.canonicalize()
+    let artifacts_path_str = artifacts_path
+        .canonicalize()
         .unwrap_or(artifacts_path)
         .to_string_lossy()
         .to_string();
@@ -317,8 +321,7 @@ async function initConsole() {{
 // Start console
 initConsole();
 "#,
-        network_config.rpc,
-        artifacts_path_str
+        network_config.rpc, artifacts_path_str
     );
 
     Ok(script)
@@ -337,9 +340,6 @@ fn print_banner() {
     "#;
 
     println!("{}", banner.cyan().bold());
-    println!(
-        "{}",
-        "Interactive Console for Smart Contracts".yellow()
-    );
+    println!("{}", "Interactive Console for Smart Contracts".yellow());
     println!();
 }

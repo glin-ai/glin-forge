@@ -48,10 +48,7 @@ pub async fn execute(args: DeployArgs) -> anyhow::Result<()> {
     let (wasm_path, metadata_path) = if args.wasm.is_none() || args.metadata.is_none() {
         find_contract_artifacts(".")?
     } else {
-        (
-            args.wasm.unwrap(),
-            args.metadata.unwrap(),
-        )
+        (args.wasm.unwrap(), args.metadata.unwrap())
     };
 
     println!("\n{}", "Contract artifacts:".bold());
@@ -111,8 +108,7 @@ pub async fn execute(args: DeployArgs) -> anyhow::Result<()> {
     println!("{} Using account: {}", "✓".green(), signer_address);
 
     // Parse value
-    let value_u128 = args.value.parse::<u128>()
-        .unwrap_or(0);
+    let value_u128 = args.value.parse::<u128>().unwrap_or(0);
 
     // Gas estimation tips
     println!("\n{}", "Gas Estimation:".bold());
@@ -120,10 +116,14 @@ pub async fn execute(args: DeployArgs) -> anyhow::Result<()> {
 
     // Simulated gas estimation
     let estimated_gas = 3_000_000_000u64; // 3B refTime
-    let estimated_proof = 1_000_000u64;   // 1M proofSize
+    let estimated_proof = 1_000_000u64; // 1M proofSize
 
     println!("  {} refTime: {}", "→".cyan(), format_number(estimated_gas));
-    println!("  {} proofSize: {}", "→".cyan(), format_number(estimated_proof));
+    println!(
+        "  {} proofSize: {}",
+        "→".cyan(),
+        format_number(estimated_proof)
+    );
 
     if args.gas_limit.is_none() {
         println!("  {} Using auto-estimated gas limit", "ℹ".blue());
@@ -141,25 +141,18 @@ pub async fn execute(args: DeployArgs) -> anyhow::Result<()> {
         None,
         value_u128,
         &signer,
-    ).await?;
+    )
+    .await?;
 
     if result.success {
-        println!(
-            "\n{} Contract deployed successfully!",
-            "✓".green().bold()
-        );
+        println!("\n{} Contract deployed successfully!", "✓".green().bold());
         println!("\n{}", "Contract info:".bold());
 
         if let Some(addr) = result.contract_address {
             println!("  {} {}", "Address:".cyan(), addr);
 
             if let Some(explorer) = network_config.explorer {
-                println!(
-                    "  {} {}/contract/{}",
-                    "Explorer:".cyan(),
-                    explorer,
-                    addr
-                );
+                println!("  {} {}/contract/{}", "Explorer:".cyan(), explorer, addr);
             }
         }
 
@@ -171,7 +164,10 @@ pub async fn execute(args: DeployArgs) -> anyhow::Result<()> {
             println!("  {} {}", "Code Hash:".cyan(), code_hash);
         }
     } else {
-        anyhow::bail!("Deployment failed: {}", result.error.unwrap_or_else(|| "Unknown error".to_string()));
+        anyhow::bail!(
+            "Deployment failed: {}",
+            result.error.unwrap_or_else(|| "Unknown error".to_string())
+        );
     }
 
     Ok(())

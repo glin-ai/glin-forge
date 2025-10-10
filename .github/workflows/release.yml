@@ -7,39 +7,145 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 0.1.0)'
+        description: 'Version to release (e.g., 0.2.0)'
         required: true
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        type: boolean
+        default: false
+
+env:
+  RUST_BACKTRACE: 1
 
 jobs:
+  # Pre-flight checks
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION"
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate version consistency
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "Checking version consistency across all packages..."
+
+          # Check version.json
+          VERSION_JSON=$(jq -r '.version' version.json)
+          if [ "$VERSION_JSON" != "$VERSION" ]; then
+            echo "❌ version.json has $VERSION_JSON, expected $VERSION"
+            exit 1
+          fi
+          echo "✓ version.json: $VERSION_JSON"
+
+          # Check Cargo.toml
+          CARGO_VERSION=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          if [ "$CARGO_VERSION" != "$VERSION" ]; then
+            echo "❌ Cargo.toml has $CARGO_VERSION, expected $VERSION"
+            exit 1
+          fi
+          echo "✓ Cargo.toml: $CARGO_VERSION"
+
+          # Check SDK package.json
+          SDK_VERSION=$(jq -r '.version' packages/sdk/package.json)
+          if [ "$SDK_VERSION" != "$VERSION" ]; then
+            echo "❌ SDK package.json has $SDK_VERSION, expected $VERSION"
+            exit 1
+          fi
+          echo "✓ SDK package.json: $SDK_VERSION"
+
+          # Check testing package.json
+          TESTING_VERSION=$(jq -r '.version' packages/testing/package.json)
+          if [ "$TESTING_VERSION" != "$VERSION" ]; then
+            echo "❌ Testing package.json has $TESTING_VERSION, expected $VERSION"
+            exit 1
+          fi
+          echo "✓ Testing package.json: $TESTING_VERSION"
+
+          # Check CLI package.json
+          CLI_VERSION=$(jq -r '.version' packages/cli/package.json)
+          if [ "$CLI_VERSION" != "$VERSION" ]; then
+            echo "❌ CLI package.json has $CLI_VERSION, expected $VERSION"
+            exit 1
+          fi
+          echo "✓ CLI package.json: $CLI_VERSION"
+
+          echo "✅ All versions match: $VERSION"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
+
+  # Build binaries for all platforms
   build-binaries:
-    name: Build ${{ matrix.platform.target }}
+    name: Build ${{ matrix.platform.name }}
+    needs: validate
     runs-on: ${{ matrix.platform.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         platform:
-          # Linux x86_64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             name: linux-x86_64
 
-          # Linux ARM64
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             name: linux-aarch64
             use-cross: true
 
-          # macOS x86_64 (Intel)
           - os: macos-latest
             target: x86_64-apple-darwin
             name: macos-x86_64
 
-          # macOS ARM64 (Apple Silicon)
           - os: macos-latest
             target: aarch64-apple-darwin
             name: macos-aarch64
 
-          # Windows x86_64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: windows-x86_64
@@ -56,9 +162,15 @@ jobs:
         if: matrix.platform.use-cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.platform.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Build binary
         run: |
-          if [[ "${{ matrix.platform.use-cross }}" == "true" ]]; then
+          if [ "${{ matrix.platform.use-cross }}" = "true" ]; then
             cross build --release --target ${{ matrix.platform.target }}
           else
             cargo build --release --target ${{ matrix.platform.target }}
@@ -67,8 +179,7 @@ jobs:
 
       - name: Create tarball
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"  # Remove 'v' prefix
+          VERSION="${{ needs.validate.outputs.version }}"
           BINARY_NAME="glin-forge"
 
           if [[ "${{ matrix.platform.target }}" == *"windows"* ]]; then
@@ -84,38 +195,60 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.TARBALL }}
+          name: glin-forge-${{ matrix.platform.name }}
           path: target/${{ matrix.platform.target }}/release/${{ env.TARBALL }}
+          retention-days: 1
 
-  create-release:
-    name: Create GitHub Release
-    needs: build-binaries
+  # Publish to crates.io (do this before npm so the package exists)
+  publish-cargo:
+    name: Publish to crates.io
+    needs: [validate, build-binaries]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.dry_run != 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
+
+  # Build and test TypeScript packages
+  test-typescript:
+    name: Test TypeScript Packages
+    needs: validate
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: dist
-          pattern: '*.tar.gz'
-          merge-multiple: true
+          node-version: '18'
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: false
-          files: dist/*.tar.gz
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build SDK
+        run: |
+          cd packages/sdk
+          npm install
+          npm run build
 
+      - name: Build Testing
+        run: |
+          cd packages/testing
+          npm install
+          npm run build
+
+  # Publish to npm
   publish-npm:
-    name: Publish npm packages
-    needs: create-release
+    name: Publish to npm
+    needs: [validate, publish-cargo, test-typescript]
     runs-on: ubuntu-latest
+    if: github.event.inputs.dry_run != 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -147,21 +280,123 @@ jobs:
       - name: Publish glin-forge (CLI wrapper)
         run: |
           cd packages/cli
-          npm install
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  publish-cargo:
-    name: Publish to crates.io
-    needs: create-release
+  # Create GitHub release
+  create-release:
+    name: Create GitHub Release
+    needs: [validate, build-binaries, publish-cargo, publish-npm]
     runs-on: ubuntu-latest
+    if: github.event.inputs.dry_run != 'true'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
 
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+      - name: Organize artifacts
+        run: |
+          mkdir -p release-assets
+          find dist -name "*.tar.gz" -exec mv {} release-assets/ \;
+          ls -lh release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ needs.validate.outputs.version }}
+          draft: false
+          prerelease: false
+          files: release-assets/*.tar.gz
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            ### Via npm (Recommended)
+            ```bash
+            npx glin-forge@${{ needs.validate.outputs.version }} init my-project
+            ```
+
+            ### Via Cargo
+            ```bash
+            cargo install glin-forge@${{ needs.validate.outputs.version }}
+            ```
+
+            ### Pre-built Binaries
+            Download the binary for your platform below and extract it.
+
+            ## npm Packages
+            - [@glin-ai/forge-sdk](https://www.npmjs.com/package/@glin-ai/forge-sdk) - TypeScript SDK
+            - [@glin-ai/forge-testing](https://www.npmjs.com/package/@glin-ai/forge-testing) - Testing utilities
+            - [glin-forge](https://www.npmjs.com/package/glin-forge) - CLI wrapper
+
+            ## Cargo Package
+            - [glin-forge](https://crates.io/crates/glin-forge) - Rust CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Post-release validation
+  validate-release:
+    name: Validate Release
+    needs: [validate, create-release]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.dry_run != 'true'
+
+    steps:
+      - name: Check crates.io
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          echo "Waiting for crates.io to update..."
+          sleep 30
+
+          if curl -f "https://crates.io/api/v1/crates/glin-forge/$VERSION" > /dev/null 2>&1; then
+            echo "✅ glin-forge@$VERSION published to crates.io"
+          else
+            echo "⚠️  glin-forge@$VERSION not yet available on crates.io (may take a few minutes)"
+          fi
+
+      - name: Check npm packages
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          echo "Checking npm packages..."
+
+          # Check SDK
+          if curl -f "https://registry.npmjs.org/@glin-ai/forge-sdk/$VERSION" > /dev/null 2>&1; then
+            echo "✅ @glin-ai/forge-sdk@$VERSION published"
+          else
+            echo "❌ @glin-ai/forge-sdk@$VERSION not found"
+            exit 1
+          fi
+
+          # Check testing
+          if curl -f "https://registry.npmjs.org/@glin-ai/forge-testing/$VERSION" > /dev/null 2>&1; then
+            echo "✅ @glin-ai/forge-testing@$VERSION published"
+          else
+            echo "❌ @glin-ai/forge-testing@$VERSION not found"
+            exit 1
+          fi
+
+          # Check CLI
+          if curl -f "https://registry.npmjs.org/glin-forge/$VERSION" > /dev/null 2>&1; then
+            echo "✅ glin-forge@$VERSION published"
+          else
+            echo "❌ glin-forge@$VERSION not found"
+            exit 1
+          fi
+
+      - name: Success notification
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎉 Release v${{ needs.validate.outputs.version }} completed successfully!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Published to:"
+          echo "  ✓ crates.io: https://crates.io/crates/glin-forge/${{ needs.validate.outputs.version }}"
+          echo "  ✓ npm: https://www.npmjs.com/package/@glin-ai/forge-sdk"
+          echo "  ✓ npm: https://www.npmjs.com/package/@glin-ai/forge-testing"
+          echo "  ✓ npm: https://www.npmjs.com/package/glin-forge"
+          echo "  ✓ GitHub: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}"

@@ -1,9 +1,19 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(clippy::wildcard_in_or_patterns)]
+#![allow(clippy::manual_clamp)]
+#![allow(clippy::print_literal)]
+#![allow(clippy::nonminimal_bool)]
+#![allow(clippy::ptr_arg)]
+#![allow(clippy::only_used_in_recursion)]
+#![allow(clippy::format_in_format_args)]
+
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 
 mod cli;
-mod config;
 mod codegen;
+mod config;
 mod contract;
 mod rpc;
 

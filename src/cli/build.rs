@@ -75,10 +75,7 @@ fn build_single_contract(args: &BuildArgs) -> anyhow::Result<()> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     println!("{}", stdout);
 
-    println!(
-        "\n{} Contract built successfully!",
-        "✓".green().bold()
-    );
+    println!("\n{} Contract built successfully!", "✓".green().bold());
 
     // Print output paths
     let target_dir = std::path::Path::new(&args.path).join("target/ink");
@@ -103,7 +100,8 @@ fn build_single_contract(args: &BuildArgs) -> anyhow::Result<()> {
         if let Some(artifacts_dir) = &args.artifacts_dir {
             copy_to_artifacts(&args.path, artifacts_dir)?;
 
-            println!("\n{} Artifacts copied to {}/",
+            println!(
+                "\n{} Artifacts copied to {}/",
                 "✓".green().bold(),
                 artifacts_dir
             );
@@ -163,11 +161,17 @@ fn verify_built_contract(target_dir: &std::path::Path) -> anyhow::Result<()> {
 
     // Size warnings
     if size_kb > 100 {
-        println!("  {} Large contract size, deployment may be expensive", "⚠".yellow());
+        println!(
+            "  {} Large contract size, deployment may be expensive",
+            "⚠".yellow()
+        );
     }
 
     if size_kb > 500 {
-        println!("  {} Contract size over 500 KB - consider optimization", "⚠".yellow().bold());
+        println!(
+            "  {} Contract size over 500 KB - consider optimization",
+            "⚠".yellow().bold()
+        );
         println!("    {}", "Try building with --release flag".dimmed());
     }
 
@@ -175,7 +179,11 @@ fn verify_built_contract(target_dir: &std::path::Path) -> anyhow::Result<()> {
     let constructors = crate::contract::metadata::list_constructors(&metadata);
     let messages = crate::contract::metadata::list_messages(&metadata);
 
-    println!("  {} {} constructor(s)", "Constructors:".cyan(), constructors.len());
+    println!(
+        "  {} {} constructor(s)",
+        "Constructors:".cyan(),
+        constructors.len()
+    );
     println!("  {} {} message(s)", "Messages:".cyan(), messages.len());
 
     if constructors.is_empty() {
@@ -183,7 +191,10 @@ fn verify_built_contract(target_dir: &std::path::Path) -> anyhow::Result<()> {
     }
 
     if messages.is_empty() {
-        println!("  {} Contract has no messages (read-only contract)", "⚠".yellow());
+        println!(
+            "  {} Contract has no messages (read-only contract)",
+            "⚠".yellow()
+        );
     }
 
     println!("\n{} Contract verification passed", "✓".green().bold());
@@ -232,9 +243,7 @@ fn copy_to_artifacts(project_path: &str, artifacts_dir: &str) -> anyhow::Result<
     }
 
     // Create artifacts/<contract_name>/ directory (in workspace root if workspace)
-    let artifacts_path = artifacts_base
-        .join(artifacts_dir)
-        .join(contract_name);
+    let artifacts_path = artifacts_base.join(artifacts_dir).join(contract_name);
     std::fs::create_dir_all(&artifacts_path)?;
 
     // Copy all 3 files: .json, .wasm, .contract
@@ -300,13 +309,21 @@ async fn build_all_contracts(args: &BuildArgs) -> anyhow::Result<()> {
     }
 
     if contract_paths.is_empty() {
-        println!("{} No contracts found in {}/", "⚠".yellow(), contracts_dir.display());
+        println!(
+            "{} No contracts found in {}/",
+            "⚠".yellow(),
+            contracts_dir.display()
+        );
         return Ok(());
     }
 
     println!("Found {} contract(s) to build:", contract_paths.len());
     for path in &contract_paths {
-        println!("  {} {}", "→".cyan(), path.file_name().unwrap().to_string_lossy());
+        println!(
+            "  {} {}",
+            "→".cyan(),
+            path.file_name().unwrap().to_string_lossy()
+        );
     }
     println!();
 
@@ -334,14 +351,20 @@ async fn build_all_contracts(args: &BuildArgs) -> anyhow::Result<()> {
             }
             Err(e) => {
                 failed.push((contract_name.to_string(), e.to_string()));
-                println!("{} Failed to build {}: {}\n", "✗".red().bold(), contract_name, e);
+                println!(
+                    "{} Failed to build {}: {}\n",
+                    "✗".red().bold(),
+                    contract_name,
+                    e
+                );
             }
         }
     }
 
     println!();
     println!("{}", "=== Build Summary ===".bold());
-    println!("  {} {}/{} contracts built successfully",
+    println!(
+        "  {} {}/{} contracts built successfully",
         "✓".green(),
         built_count,
         contract_paths.len()

@@ -1,9 +1,9 @@
 use clap::Parser;
 use colored::Colorize;
-use std::fs;
-use std::path::Path;
 use handlebars::Handlebars;
 use serde_json::json;
+use std::fs;
+use std::path::Path;
 
 #[derive(Parser)]
 pub struct NewArgs {
@@ -13,7 +13,12 @@ pub struct NewArgs {
 }
 
 pub async fn execute(args: NewArgs) -> anyhow::Result<()> {
-    println!("{}", format!("Creating new contract: {}", args.name).cyan().bold());
+    println!(
+        "{}",
+        format!("Creating new contract: {}", args.name)
+            .cyan()
+            .bold()
+    );
 
     // Validate project name
     if Path::new(&args.name).exists() {
@@ -22,7 +27,7 @@ pub async fn execute(args: NewArgs) -> anyhow::Result<()> {
 
     // Get template
     let template_name = args.template.to_lowercase();
-    let valid_templates = vec!["erc20", "erc721", "dao"];
+    let valid_templates = ["erc20", "erc721", "dao"];
 
     if !valid_templates.contains(&template_name.as_str()) {
         anyhow::bail!(

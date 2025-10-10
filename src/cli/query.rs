@@ -68,13 +68,11 @@ pub async fn execute(args: QueryArgs) -> anyhow::Result<()> {
         &metadata,
         &args.method,
         args.args.clone(),
-    ).await?;
+    )
+    .await?;
 
     if result.success {
-        println!(
-            "\n{} Query successful!",
-            "✓".green().bold()
-        );
+        println!("\n{} Query successful!", "✓".green().bold());
 
         if args.json {
             let json_output = serde_json::json!({
@@ -92,7 +90,10 @@ pub async fn execute(args: QueryArgs) -> anyhow::Result<()> {
             }
         }
     } else {
-        anyhow::bail!("Query failed: {}", result.error.unwrap_or_else(|| "Unknown error".to_string()));
+        anyhow::bail!(
+            "Query failed: {}",
+            result.error.unwrap_or_else(|| "Unknown error".to_string())
+        );
     }
 
     Ok(())
@@ -100,11 +101,7 @@ pub async fn execute(args: QueryArgs) -> anyhow::Result<()> {
 
 fn find_metadata_for_contract(_address: &str) -> anyhow::Result<String> {
     // Try to find metadata in common locations
-    let possible_paths = vec![
-        "target/ink/metadata.json",
-        "contract.json",
-        "abi.json",
-    ];
+    let possible_paths = vec!["target/ink/metadata.json", "contract.json", "abi.json"];
 
     for path in possible_paths {
         if std::path::Path::new(path).exists() {

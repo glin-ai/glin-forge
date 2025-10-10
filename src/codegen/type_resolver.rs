@@ -86,10 +86,7 @@ impl TypeResolver {
 
         let mut types = HashMap::new();
         for type_entry in types_vec {
-            let id = type_entry["id"]
-                .as_u64()
-                .context("Type entry missing id")?
-                as u32;
+            let id = type_entry["id"].as_u64().context("Type entry missing id")? as u32;
             let type_def = type_entry["type"].clone();
             types.insert(id, type_def);
         }
@@ -116,7 +113,9 @@ impl TypeResolver {
 
         self.resolving_stack.insert(type_id);
 
-        let type_def = self.types.get(&type_id)
+        let type_def = self
+            .types
+            .get(&type_id)
             .with_context(|| format!("Type ID {} not found in registry", type_id))?
             .clone();
 
@@ -132,11 +131,7 @@ impl TypeResolver {
     fn resolve_type_def(&mut self, type_def: &JsonValue) -> Result<TypeScriptType> {
         let path = type_def["path"]
             .as_array()
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .collect::<Vec<_>>()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
             .unwrap_or_default();
 
         let def = &type_def["def"];
@@ -209,17 +204,19 @@ impl TypeResolver {
             "Result" => {
                 let params = type_def["params"].as_array();
                 if let Some(params) = params {
-                    let ok_type = if let Some(ok_id) = params.get(0).and_then(|p| p["type"].as_u64()) {
-                        self.resolve_type(ok_id as u32)?
-                    } else {
-                        TypeScriptType::Any
-                    };
+                    let ok_type =
+                        if let Some(ok_id) = params.first().and_then(|p| p["type"].as_u64()) {
+                            self.resolve_type(ok_id as u32)?
+                        } else {
+                            TypeScriptType::Any
+                        };
 
-                    let err_type = if let Some(err_id) = params.get(1).and_then(|p| p["type"].as_u64()) {
-                        self.resolve_type(err_id as u32)?
-                    } else {
-                        TypeScriptType::Any
-                    };
+                    let err_type =
+                        if let Some(err_id) = params.get(1).and_then(|p| p["type"].as_u64()) {
+                            self.resolve_type(err_id as u32)?
+                        } else {
+                            TypeScriptType::Any
+                        };
 
                     return Ok(Some(TypeScriptType::Union {
                         name: "Result".to_string(),
@@ -308,10 +305,7 @@ impl TypeResolver {
             // Treat as tuple
             let mut tuple_types = Vec::new();
             for field in fields_array {
-                let type_id = field["type"]
-                    .as_u64()
-                    .context("Field missing type")?
-                    as u32;
+                let type_id = field["type"].as_u64().context("Field missing type")? as u32;
                 let field_type = self.resolve_type(type_id)?;
                 tuple_types.push(field_type);
             }
@@ -331,10 +325,7 @@ impl TypeResolver {
                 .as_str()
                 .context("Named field missing name")?
                 .to_string();
-            let type_id = field["type"]
-                .as_u64()
-                .context("Field missing type")?
-                as u32;
+            let type_id = field["type"].as_u64().context("Field missing type")? as u32;
             let field_type = self.resolve_type(type_id)?;
             fields.push((name, Box::new(field_type)));
         }
@@ -353,11 +344,7 @@ impl TypeResolver {
     }
 
     /// Resolve variant types (enums)
-    fn resolve_variant(
-        &mut self,
-        variant: &JsonValue,
-        path: &[&str],
-    ) -> Result<TypeScriptType> {
+    fn resolve_variant(&mut self, variant: &JsonValue, path: &[&str]) -> Result<TypeScriptType> {
         let variants_array = variant["variants"]
             .as_array()
             .context("Variant type missing variants")?;
@@ -374,14 +361,9 @@ impl TypeResolver {
 
             if let Some(fields_array) = var["fields"].as_array() {
                 for (idx, field) in fields_array.iter().enumerate() {
-                    let field_name = field["name"]
-                        .as_str()
-                        .map(|s| s.to_string());
+                    let field_name = field["name"].as_str().map(|s| s.to_string());
 
-                    let type_id = field["type"]
-                        .as_u64()
-                        .context("Field missing type")?
-                        as u32;
+                    let type_id = field["type"].as_u64().context("Field missing type")? as u32;
                     let field_type = self.resolve_type(type_id)?;
 
                     let name = field_name.or_else(|| {
@@ -418,10 +400,7 @@ impl TypeResolver {
 
     /// Resolve sequence types (Vec<T>)
     fn resolve_sequence(&mut self, sequence: &JsonValue) -> Result<TypeScriptType> {
-        let inner_type_id = sequence["type"]
-            .as_u64()
-            .context("Sequence missing type")?
-            as u32;
+        let inner_type_id = sequence["type"].as_u64().context("Sequence missing type")? as u32;
 
         let inner = self.resolve_type(inner_type_id)?;
 
@@ -438,10 +417,7 @@ impl TypeResolver {
 
     /// Resolve array types [T; N]
     fn resolve_array(&mut self, array: &JsonValue) -> Result<TypeScriptType> {
-        let inner_type_id = array["type"]
-            .as_u64()
-            .context("Array missing type")?
-            as u32;
+        let inner_type_id = array["type"].as_u64().context("Array missing type")? as u32;
         let len = array["len"].as_u64().unwrap_or(0);
 
         let inner = self.resolve_type(inner_type_id)?;
@@ -460,9 +436,7 @@ impl TypeResolver {
 
     /// Resolve tuple types
     fn resolve_tuple(&mut self, tuple: &JsonValue) -> Result<TypeScriptType> {
-        let type_ids = tuple
-            .as_array()
-            .context("Tuple must be an array")?;
+        let type_ids = tuple.as_array().context("Tuple must be an array")?;
 
         if type_ids.is_empty() {
             // Unit type ()
@@ -481,10 +455,7 @@ impl TypeResolver {
 
     /// Resolve compact types
     fn resolve_compact(&mut self, compact: &JsonValue) -> Result<TypeScriptType> {
-        let inner_type_id = compact["type"]
-            .as_u64()
-            .context("Compact missing type")?
-            as u32;
+        let inner_type_id = compact["type"].as_u64().context("Compact missing type")? as u32;
 
         // Compact is a SCALE encoding optimization, doesn't affect TS type
         self.resolve_type(inner_type_id)
@@ -517,13 +488,11 @@ impl TypeResolver {
                     .join(", ");
                 format!("[{}]", formatted)
             }
-            TypeScriptType::Or(types) => {
-                types
-                    .iter()
-                    .map(|t| self.format_type(t))
-                    .collect::<Vec<_>>()
-                    .join(" | ")
-            }
+            TypeScriptType::Or(types) => types
+                .iter()
+                .map(|t| self.format_type(t))
+                .collect::<Vec<_>>()
+                .join(" | "),
             TypeScriptType::Optional(inner) => {
                 format!("{} | null", self.format_type(inner))
             }
@@ -579,9 +548,9 @@ mod tests {
         );
 
         assert_eq!(
-            resolver.format_type(&TypeScriptType::Array(Box::new(
-                TypeScriptType::Primitive("number".to_string())
-            ))),
+            resolver.format_type(&TypeScriptType::Array(Box::new(TypeScriptType::Primitive(
+                "number".to_string()
+            )))),
             "number[]"
         );
 

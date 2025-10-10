@@ -49,7 +49,11 @@ pub async fn execute(args: UploadArgs) -> anyhow::Result<()> {
     println!("  {} {}", "Network:".cyan(), args.network);
     println!("  {} {}", "RPC:".cyan(), network_config.rpc);
     println!("  {} {}", "Account:".cyan(), args.account);
-    println!("  {} {} bytes", "Code Size:".cyan(), format_number(wasm_size as u64));
+    println!(
+        "  {} {} bytes",
+        "Code Size:".cyan(),
+        format_number(wasm_size as u64)
+    );
 
     // Confirmation prompt
     if !args.yes {
@@ -84,10 +88,14 @@ pub async fn execute(args: UploadArgs) -> anyhow::Result<()> {
 
     // Simulated gas estimation (upload is cheaper than deploy)
     let estimated_gas = 2_000_000_000u64; // 2B refTime
-    let estimated_proof = 500_000u64;     // 500K proofSize
+    let estimated_proof = 500_000u64; // 500K proofSize
 
     println!("  {} refTime: {}", "→".cyan(), format_number(estimated_gas));
-    println!("  {} proofSize: {}", "→".cyan(), format_number(estimated_proof));
+    println!(
+        "  {} proofSize: {}",
+        "→".cyan(),
+        format_number(estimated_proof)
+    );
 
     if args.gas_limit.is_none() {
         println!("  {} Using auto-estimated gas limit", "ℹ".blue());
@@ -96,17 +104,10 @@ pub async fn execute(args: UploadArgs) -> anyhow::Result<()> {
     println!("\n{}", "Uploading code...".cyan());
 
     // Upload code (simulated for now)
-    let result = crate::contract::upload_code(
-        &client,
-        wasm_bytes,
-        &signer,
-    ).await?;
+    let result = crate::contract::upload_code(&client, wasm_bytes, &signer).await?;
 
     if result.success {
-        println!(
-            "\n{} Code uploaded successfully!",
-            "✓".green().bold()
-        );
+        println!("\n{} Code uploaded successfully!", "✓".green().bold());
         println!("\n{}", "Upload info:".bold());
 
         if let Some(code_hash) = result.code_hash {
@@ -114,7 +115,8 @@ pub async fn execute(args: UploadArgs) -> anyhow::Result<()> {
             println!();
             println!("{}", "Next steps:".bold());
             println!("  {} Instantiate contract:", "→".cyan());
-            println!("    {} glin-forge instantiate --code-hash {} --account {}",
+            println!(
+                "    {} glin-forge instantiate --code-hash {} --account {}",
                 "".dimmed(),
                 code_hash,
                 args.account
@@ -125,7 +127,10 @@ pub async fn execute(args: UploadArgs) -> anyhow::Result<()> {
             println!("\n  {} {}", "Transaction:".cyan(), hash);
         }
     } else {
-        anyhow::bail!("Upload failed: {}", result.error.unwrap_or_else(|| "Unknown error".to_string()));
+        anyhow::bail!(
+            "Upload failed: {}",
+            result.error.unwrap_or_else(|| "Unknown error".to_string())
+        );
     }
 
     Ok(())

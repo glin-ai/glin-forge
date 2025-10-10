@@ -1,11 +1,11 @@
 use clap::Parser;
 use colored::Colorize;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
+use handlebars::Handlebars;
+use serde_json::json;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
-use handlebars::Handlebars;
-use serde_json::json;
 
 #[derive(Parser)]
 pub struct InitArgs {
@@ -84,7 +84,9 @@ pub async fn execute(args: InitArgs) -> anyhow::Result<()> {
             .collect();
 
         if !entries.is_empty() {
-            anyhow::bail!("Directory is not empty. Use 'glin-forge new <name>' to create a new project.");
+            anyhow::bail!(
+                "Directory is not empty. Use 'glin-forge new <name>' to create a new project."
+            );
         }
     } else {
         fs::create_dir_all(path)?;
@@ -311,7 +313,14 @@ fn interactive_setup(
         false
     };
 
-    Ok((project_name, project_type, template, frontend, init_git, install_deps))
+    Ok((
+        project_name,
+        project_type,
+        template,
+        frontend,
+        init_git,
+        install_deps,
+    ))
 }
 
 fn create_contract_files(
@@ -380,11 +389,7 @@ fn create_config_file(
     Ok(())
 }
 
-fn create_frontend(
-    path: &Path,
-    frontend: &Frontend,
-    project_name: &str,
-) -> anyhow::Result<()> {
+fn create_frontend(path: &Path, frontend: &Frontend, project_name: &str) -> anyhow::Result<()> {
     println!();
     println!("{}", "🎨 Creating frontend...".bold());
 
@@ -554,7 +559,8 @@ fn create_nextjs_app(path: &Path, project_name: &str) -> anyhow::Result<()> {
     fs::create_dir_all(&app_path)?;
 
     // Create app/page.tsx
-    let page_tsx = format!(r#"'use client';
+    let page_tsx = format!(
+        r#"'use client';
 
 import {{ useState, useEffect }} from 'react';
 import styles from './page.module.css';
@@ -594,13 +600,16 @@ export default function Home() {{
     </main>
   );
 }}
-"#, project_name);
+"#,
+        project_name
+    );
 
     fs::write(app_path.join("page.tsx"), page_tsx)?;
     println!("  {} Created: frontend/app/page.tsx", "✓".green());
 
     // Create app/layout.tsx
-    let layout_tsx = format!(r#"import type {{ Metadata }} from 'next';
+    let layout_tsx = format!(
+        r#"import type {{ Metadata }} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {{
@@ -619,7 +628,9 @@ export default function RootLayout({{
     </html>
   );
 }}
-"#, project_name);
+"#,
+        project_name
+    );
 
     fs::write(app_path.join("layout.tsx"), layout_tsx)?;
     println!("  {} Created: frontend/app/layout.tsx", "✓".green());
@@ -756,7 +767,8 @@ fn create_vue_app(path: &Path, project_name: &str) -> anyhow::Result<()> {
     fs::create_dir_all(&src_path)?;
 
     // Create App.vue
-    let app_vue = format!(r#"<script setup lang="ts">
+    let app_vue = format!(
+        r#"<script setup lang="ts">
 import {{ ref, onMounted }} from 'vue';
 
 const isConnected = ref(false);
@@ -869,7 +881,9 @@ const handleDeploy = async () => {{
   cursor: not-allowed;
 }}
 </style>
-"#, project_name);
+"#,
+        project_name
+    );
 
     fs::write(src_path.join("App.vue"), app_vue)?;
     println!("  {} Created: frontend/src/App.vue", "✓".green());
@@ -1025,7 +1039,7 @@ frontend/build/
 
 fn init_git_repo(path: &Path) -> anyhow::Result<()> {
     let output = Command::new("git")
-        .args(&["init"])
+        .args(["init"])
         .current_dir(path)
         .output();
 
@@ -1051,7 +1065,7 @@ fn install_dependencies(path: &Path, frontend: &Frontend) -> anyhow::Result<()> 
     println!("  Installing frontend dependencies...");
 
     let output = Command::new("npm")
-        .args(&["install"])
+        .args(["install"])
         .current_dir(&frontend_path)
         .output();
 

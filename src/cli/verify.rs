@@ -29,10 +29,16 @@ pub struct VerifyArgs {
 }
 
 pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
-    println!("{}", format!("Verifying contract: {}", args.address).cyan().bold());
+    println!(
+        "{}",
+        format!("Verifying contract: {}", args.address)
+            .cyan()
+            .bold()
+    );
 
     // Auto-detect files if not provided
-    let (wasm_path, metadata_path, source_path) = if args.wasm.is_none() || args.metadata.is_none() {
+    let (wasm_path, metadata_path, source_path) = if args.wasm.is_none() || args.metadata.is_none()
+    {
         find_verification_files(".")?
     } else {
         (
@@ -81,7 +87,7 @@ pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
     let code_storage_query = subxt::dynamic::storage(
         "Contracts",
         "PristineCode",
-        vec![subxt::dynamic::Value::from_bytes(&code_hash)],
+        vec![subxt::dynamic::Value::from_bytes(code_hash)],
     );
 
     let code_exists = client
@@ -140,11 +146,17 @@ pub async fn execute(args: VerifyArgs) -> anyhow::Result<()> {
                     explorer,
                     args.address
                 );
-                println!("\n{}", "Verification usually completes in 1-2 minutes...".dimmed());
+                println!(
+                    "\n{}",
+                    "Verification usually completes in 1-2 minutes...".dimmed()
+                );
             }
             Ok(response) => {
                 let status = response.status();
-                let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
 
                 println!("\n{} Verification submission failed", "✗".red().bold());
                 println!("  {} {}", "Status:".cyan(), status);
@@ -204,6 +216,9 @@ fn find_verification_files(path: &str) -> anyhow::Result<(PathBuf, PathBuf, Path
 
     match (wasm_file, json_file) {
         (Some(wasm), Some(json)) => Ok((wasm, json, source_path)),
-        _ => anyhow::bail!("Could not find contract artifacts in {}", target_dir.display()),
+        _ => anyhow::bail!(
+            "Could not find contract artifacts in {}",
+            target_dir.display()
+        ),
     }
 }

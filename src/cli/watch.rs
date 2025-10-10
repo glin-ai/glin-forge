@@ -43,11 +43,11 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
     if let Some(event) = &args.event {
         println!("  {} {}", "Event filter:".cyan(), event);
     } else {
-        println!("  {} {}", "Event filter:".cyan(), "All events");
+        println!("  {} All events", "Event filter:".cyan());
     }
 
     if args.follow {
-        println!("  {} {}", "Mode:".cyan(), "Follow (live)");
+        println!("  {} Follow (live)", "Mode:".cyan());
     }
 
     println!("\n{}", "Connecting to network...".cyan());
@@ -86,12 +86,20 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
 
                     // Check if limit reached
                     if event_count >= args.limit {
-                        println!("\n{} Reached limit of {} events", "✓".green().bold(), args.limit);
+                        println!(
+                            "\n{} Reached limit of {} events",
+                            "✓".green().bold(),
+                            args.limit
+                        );
                         return Ok(());
                     }
 
                     println!("{} Block #{}", "→".cyan(), block_number);
-                    println!("  {} {}", variant.yellow().bold(), format_event_data(&event)?);
+                    println!(
+                        "  {} {}",
+                        variant.yellow().bold(),
+                        format_event_data(&event)?
+                    );
                     println!();
 
                     event_count += 1;
@@ -103,9 +111,9 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
         let latest_block = client.blocks().at_latest().await?;
         let latest_number = latest_block.number() as u64;
 
-        let start_block = args.from_block.unwrap_or_else(|| {
-            latest_number.saturating_sub(100)
-        });
+        let start_block = args
+            .from_block
+            .unwrap_or_else(|| latest_number.saturating_sub(100));
 
         for block_num in start_block..=latest_number {
             if event_count >= args.limit {
@@ -115,9 +123,8 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
             // Get block hash for this number using RPC
             let rpc = glin_client::create_rpc_client(&network_config.rpc).await?;
 
-            let block_hash_opt: Option<subxt::utils::H256> = rpc
-                .chain_get_block_hash(Some(block_num.into()))
-                .await?;
+            let block_hash_opt: Option<subxt::utils::H256> =
+                rpc.chain_get_block_hash(Some(block_num.into())).await?;
 
             if let Some(block_hash) = block_hash_opt {
                 let block = client.blocks().at(block_hash).await?;
@@ -140,7 +147,11 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
                         }
 
                         println!("{} Block #{}", "→".cyan(), block_num);
-                        println!("  {} {}", variant.yellow().bold(), format_event_data(&event)?);
+                        println!(
+                            "  {} {}",
+                            variant.yellow().bold(),
+                            format_event_data(&event)?
+                        );
                         println!();
 
                         event_count += 1;
@@ -153,14 +164,19 @@ pub async fn execute(args: WatchArgs) -> anyhow::Result<()> {
         if event_count == 0 {
             println!("{}", "No contract events found in recent blocks".dimmed());
         }
-        println!("Use {} to keep watching for new events", "--follow".yellow());
+        println!(
+            "Use {} to keep watching for new events",
+            "--follow".yellow()
+        );
     }
 
     Ok(())
 }
 
 /// Format event data for display
-fn format_event_data<T: subxt::Config>(event: &subxt::events::EventDetails<T>) -> anyhow::Result<String> {
+fn format_event_data<T: subxt::Config>(
+    event: &subxt::events::EventDetails<T>,
+) -> anyhow::Result<String> {
     // Get event field values
     let field_values = event.field_values()?;
 

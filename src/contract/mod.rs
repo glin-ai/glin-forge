@@ -1,9 +1,9 @@
-use anyhow::{Result, Context};
-use subxt_signer::sr25519::Keypair;
+use anyhow::{Context, Result};
 use glin_client::GlinClient;
-use subxt::utils::AccountId32;
-use scale::Encode;
 use ink_metadata::InkProject;
+use scale::Encode;
+use subxt::utils::AccountId32;
+use subxt_signer::sr25519::Keypair;
 
 // Re-export SDK modules for convenience
 pub use glin_contracts::{chain_info, encoding, metadata, metadata_fetcher};
@@ -52,7 +52,10 @@ pub async fn deploy_contract(
     value: u128,
     signer: &Keypair,
 ) -> Result<DeployResult> {
-    println!("Deploying contract with {} bytes of WASM code", wasm_code.len());
+    println!(
+        "Deploying contract with {} bytes of WASM code",
+        wasm_code.len()
+    );
     println!("Constructor args: {:?}", constructor_args);
     println!("Value: {}", value);
 
@@ -61,8 +64,8 @@ pub async fn deploy_contract(
 
     // Build dynamic transaction for instantiate_with_code
     let gas_limit_value = subxt::dynamic::Value::unnamed_composite(vec![
-        subxt::dynamic::Value::u128(5_000_000_000),  // ref_time
-        subxt::dynamic::Value::u128(2_000_000),      // proof_size
+        subxt::dynamic::Value::u128(5_000_000_000), // ref_time
+        subxt::dynamic::Value::u128(2_000_000),     // proof_size
     ]);
 
     let tx = subxt::dynamic::tx(
@@ -74,7 +77,7 @@ pub async fn deploy_contract(
             subxt::dynamic::Value::unnamed_variant("None", vec![]), // storage_deposit_limit
             subxt::dynamic::Value::from_bytes(&wasm_code),
             subxt::dynamic::Value::from_bytes(&data),
-            subxt::dynamic::Value::from_bytes(&vec![0u8; 32]), // salt
+            subxt::dynamic::Value::from_bytes(vec![0u8; 32]), // salt
         ],
     );
 
@@ -106,7 +109,8 @@ pub async fn deploy_contract(
                     let field_values = event.field_values()?;
                     if let Ok(json) = serde_json::to_value(&field_values) {
                         if let Some(contract) = json.get("contract") {
-                            contract_address = Some(contract.to_string().trim_matches('"').to_string());
+                            contract_address =
+                                Some(contract.to_string().trim_matches('"').to_string());
                         }
                     }
                 }
@@ -207,8 +211,8 @@ pub async fn instantiate_contract(
     let data = encode_constructor_call(&constructor_args, metadata, constructor_name)?;
 
     // Decode code hash
-    let code_hash_bytes = hex::decode(code_hash.trim_start_matches("0x"))
-        .context("Invalid code hash format")?;
+    let code_hash_bytes =
+        hex::decode(code_hash.trim_start_matches("0x")).context("Invalid code hash format")?;
     let code_hash_array: [u8; 32] = code_hash_bytes
         .try_into()
         .map_err(|_| anyhow::anyhow!("Code hash must be 32 bytes"))?;
@@ -225,9 +229,9 @@ pub async fn instantiate_contract(
             subxt::dynamic::Value::u128(value),
             gas_limit_value,
             subxt::dynamic::Value::unnamed_variant("None", vec![]),
-            subxt::dynamic::Value::from_bytes(&code_hash_array),
+            subxt::dynamic::Value::from_bytes(code_hash_array),
             subxt::dynamic::Value::from_bytes(&data),
-            subxt::dynamic::Value::from_bytes(&vec![0u8; 32]), // salt
+            subxt::dynamic::Value::from_bytes(vec![0u8; 32]), // salt
         ],
     );
 
@@ -299,9 +303,9 @@ pub async fn call_contract(
         "Contracts",
         "call",
         vec![
-            subxt::dynamic::Value::unnamed_composite(vec![
-                subxt::dynamic::Value::from_bytes(&dest.0),
-            ]),
+            subxt::dynamic::Value::unnamed_composite(vec![subxt::dynamic::Value::from_bytes(
+                dest.0,
+            )]),
             subxt::dynamic::Value::u128(value),
             gas_limit_value,
             subxt::dynamic::Value::unnamed_variant("None", vec![]),
@@ -354,8 +358,8 @@ pub async fn query_contract(
     let call_params = (
         origin.0.to_vec(),
         dest.0.to_vec(),
-        0u128, // value
-        None::<u64>, // gas_limit (None = estimate)
+        0u128,        // value
+        None::<u64>,  // gas_limit (None = estimate)
         None::<u128>, // storage_deposit_limit
         data,
     );
@@ -413,7 +417,7 @@ fn decode_contract_exec_result(bytes: &[u8]) -> Result<ContractExecResultDecoded
     // - debug_message: Vec<u8>
     // - result: Result<ExecReturnValue, DispatchError>
 
-    let mut input = &bytes[..];
+    let mut input = bytes;
 
     // Skip gas_consumed (WeightV2 - 2x u64)
     let _ref_time = u64::decode(&mut input)?;
@@ -485,11 +489,7 @@ fn encode_constructor_call(
 }
 
 /// Encode method call with selector and arguments
-fn encode_method_call(
-    method: &str,
-    args: &[String],
-    metadata: &InkProject,
-) -> Result<Vec<u8>> {
+fn encode_method_call(method: &str, args: &[String], metadata: &InkProject) -> Result<Vec<u8>> {
     // Get message spec
     let message = metadata::get_message_spec(metadata, method)?;
 
@@ -513,9 +513,9 @@ fn parse_account_id(address: &str) -> Result<AccountId32> {
 
     // If it's hex, decode it
     if address.starts_with("0x") {
-        let bytes = hex::decode(address.trim_start_matches("0x"))
-            .context("Invalid hex address")?;
-        let array: [u8; 32] = bytes.try_into()
+        let bytes = hex::decode(address.trim_start_matches("0x")).context("Invalid hex address")?;
+        let array: [u8; 32] = bytes
+            .try_into()
             .map_err(|_| anyhow::anyhow!("Address must be 32 bytes"))?;
         return Ok(AccountId32(array));
     }

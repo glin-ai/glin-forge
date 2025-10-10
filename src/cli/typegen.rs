@@ -53,9 +53,12 @@ pub async fn execute(args: TypegenArgs) -> anyhow::Result<()> {
         };
 
         // Fetch metadata using multi-strategy approach
-        let metadata =
-            crate::contract::metadata_fetcher::fetch_contract_metadata(&client, contract_addr, options)
-                .await?;
+        let metadata = crate::contract::metadata_fetcher::fetch_contract_metadata(
+            &client,
+            contract_addr,
+            options,
+        )
+        .await?;
 
         // Convert InkProject back to JSON string for compatibility
         serde_json::to_string(&metadata)?
@@ -100,10 +103,7 @@ pub async fn execute(args: TypegenArgs) -> anyhow::Result<()> {
     let types_file = args.output.join(format!("{}.ts", contract_name));
     std::fs::write(&types_file, ts_content)?;
 
-    println!(
-        "\n{} TypeScript types generated!",
-        "✓".green().bold()
-    );
+    println!("\n{} TypeScript types generated!", "✓".green().bold());
     println!("  {} {}", "Output:".cyan(), types_file.display());
 
     // Generate React hooks if requested
@@ -117,10 +117,19 @@ pub async fn execute(args: TypegenArgs) -> anyhow::Result<()> {
 
     println!("\n{}", "Usage example:".bold());
     if args.legacy {
-        println!("  import {{ {}Contract }} from './{}'", contract_name, types_file.display());
+        println!(
+            "  import {{ {}Contract }} from './{}'",
+            contract_name,
+            types_file.display()
+        );
     } else {
-        println!("  import type {{ {}, {}Queries, {}Transactions }} from './{}'",
-            contract_name, contract_name, contract_name, types_file.display());
+        println!(
+            "  import type {{ {}, {}Queries, {}Transactions }} from './{}'",
+            contract_name,
+            contract_name,
+            contract_name,
+            types_file.display()
+        );
         println!("  // Fully type-safe contract interactions with IDE autocomplete!");
     }
 
@@ -145,15 +154,14 @@ fn find_metadata_in_artifacts() -> anyhow::Result<Option<PathBuf>> {
                 if let Some(found) = search_json(&path)? {
                     return Ok(Some(found));
                 }
-            } else if path.is_file() {
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+            } else if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("json") {
                     let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
                     // Skip .contract files
                     if !file_name.ends_with(".contract") {
                         return Ok(Some(path));
                     }
                 }
-            }
         }
         Ok(None)
     }

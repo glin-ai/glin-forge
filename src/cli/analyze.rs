@@ -137,8 +137,7 @@ fn analyze_path(path: &Path, args: &AnalyzeArgs) -> Result<AnalysisReport> {
             let entry = entry?;
             let file_path = entry.path();
 
-            if file_path.is_file() && file_path.extension().and_then(|s| s.to_str()) == Some("rs")
-            {
+            if file_path.is_file() && file_path.extension().and_then(|s| s.to_str()) == Some("rs") {
                 if let Some(analysis) = analyze_file(&file_path)? {
                     if args.security {
                         security_issues.extend(analyze_security(&file_path, &analysis)?);
@@ -191,7 +190,10 @@ fn analyze_file(path: &Path) -> Result<Option<FileAnalysis>> {
         return Ok(None);
     }
 
-    let lines_of_code = content.lines().filter(|line| !line.trim().is_empty()).count();
+    let lines_of_code = content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count();
 
     let functions = extract_functions(&content);
     let imports = extract_imports(&content);
@@ -358,9 +360,7 @@ fn extract_traits(content: &str) -> Vec<String> {
 fn extract_structs(content: &str) -> Vec<String> {
     content
         .lines()
-        .filter(|line| {
-            line.trim().starts_with("pub struct ") || line.trim().starts_with("struct ")
-        })
+        .filter(|line| line.trim().starts_with("pub struct ") || line.trim().starts_with("struct "))
         .map(|line| {
             line.trim()
                 .replace("pub struct ", "")
@@ -380,8 +380,8 @@ fn analyze_security(path: &Path, analysis: &FileAnalysis) -> Result<Vec<Security
     // Check for common security issues
 
     // 1. Unchecked arithmetic operations
-    if content.contains(" + ") || content.contains(" - ") || content.contains(" * ") {
-        if !content.contains("checked_add")
+    if (content.contains(" + ") || content.contains(" - ") || content.contains(" * "))
+        && !content.contains("checked_add")
             && !content.contains("checked_sub")
             && !content.contains("checked_mul")
         {
@@ -394,12 +394,11 @@ fn analyze_security(path: &Path, analysis: &FileAnalysis) -> Result<Vec<Security
                 recommendation: "Use checked arithmetic operations (checked_add, checked_sub, etc.)".to_string(),
             });
         }
-    }
 
     // 2. Missing access control on payable functions
     for func in &analysis.functions {
-        if func.is_payable && func.visibility == "public" {
-            if !content.contains("only_owner") && !content.contains("require!") {
+        if func.is_payable && func.visibility == "public"
+            && !content.contains("only_owner") && !content.contains("require!") {
                 issues.push(SecurityIssue {
                     severity: "high".to_string(),
                     category: "Access Control".to_string(),
@@ -410,7 +409,6 @@ fn analyze_security(path: &Path, analysis: &FileAnalysis) -> Result<Vec<Security
                         .to_string(),
                 });
             }
-        }
     }
 
     // 3. Unsafe unwrap usage
@@ -574,7 +572,10 @@ fn output_text(report: &AnalysisReport, args: &AnalyzeArgs) -> Result<()> {
 
     // Gas optimizations
     if args.gas && !report.gas_optimizations.is_empty() {
-        println!("{}", "=== Gas Optimization Opportunities ===".yellow().bold());
+        println!(
+            "{}",
+            "=== Gas Optimization Opportunities ===".yellow().bold()
+        );
         for opt in &report.gas_optimizations {
             let impact_color = match opt.impact.as_str() {
                 "high" => "red",
@@ -629,10 +630,7 @@ fn output_text(report: &AnalysisReport, args: &AnalyzeArgs) -> Result<()> {
     }
 
     println!();
-    println!(
-        "{}",
-        "✓ Analysis complete!".green().bold()
-    );
+    println!("{}", "✓ Analysis complete!".green().bold());
 
     Ok(())
 }
@@ -642,7 +640,11 @@ fn output_json(report: &AnalysisReport, output_file: Option<&str>) -> Result<()>
 
     if let Some(file_path) = output_file {
         fs::write(file_path, json)?;
-        println!("{} {}", "✓".green(), format!("Report saved to {}", file_path));
+        println!(
+            "{} {}",
+            "✓".green(),
+            format!("Report saved to {}", file_path)
+        );
     } else {
         println!("{}", json);
     }

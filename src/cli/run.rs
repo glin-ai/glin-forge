@@ -26,7 +26,8 @@ pub async fn execute(args: RunArgs) -> anyhow::Result<()> {
     }
 
     // Check if script is TypeScript or JavaScript
-    let extension = args.script
+    let extension = args
+        .script
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or("");
@@ -112,10 +113,7 @@ async fn execute_script(script: &PathBuf, extension: &str) -> anyhow::Result<()>
     let status = child.wait()?;
 
     if !status.success() {
-        anyhow::bail!(
-            "Script exited with code: {}",
-            status.code().unwrap_or(-1)
-        );
+        anyhow::bail!("Script exited with code: {}", status.code().unwrap_or(-1));
     }
 
     Ok(())

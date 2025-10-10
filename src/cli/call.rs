@@ -99,18 +99,21 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
     println!("{} Using account: {}", "✓".green(), signer_address);
 
     // Parse value
-    let value_u128 = args.value.parse::<u128>()
-        .unwrap_or(0);
+    let value_u128 = args.value.parse::<u128>().unwrap_or(0);
 
     // Gas estimation
     println!("\n{}", "Gas Estimation:".bold());
     println!("  {} Estimating transaction gas...", "→".cyan());
 
     let estimated_gas = 2_000_000_000u64; // 2B refTime
-    let estimated_proof = 800_000u64;     // 800K proofSize
+    let estimated_proof = 800_000u64; // 800K proofSize
 
     println!("  {} refTime: {}", "→".cyan(), format_number(estimated_gas));
-    println!("  {} proofSize: {}", "→".cyan(), format_number(estimated_proof));
+    println!(
+        "  {} proofSize: {}",
+        "→".cyan(),
+        format_number(estimated_proof)
+    );
 
     if args.gas_limit.is_none() {
         println!("  {} Using auto-estimated gas limit", "ℹ".blue());
@@ -127,13 +130,11 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
         args.args.clone(),
         value_u128,
         &signer,
-    ).await?;
+    )
+    .await?;
 
     if result.success {
-        println!(
-            "\n{} Transaction successful!",
-            "✓".green().bold()
-        );
+        println!("\n{} Transaction successful!", "✓".green().bold());
 
         println!("\n{}", "Transaction info:".bold());
 
@@ -141,12 +142,7 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
             println!("  {} {}", "Hash:".cyan(), hash);
 
             if let Some(explorer) = &network_config.explorer {
-                println!(
-                    "  {} {}/tx/{}",
-                    "Explorer:".cyan(),
-                    explorer,
-                    hash
-                );
+                println!("  {} {}/tx/{}", "Explorer:".cyan(), explorer, hash);
             }
         }
 
@@ -159,7 +155,10 @@ pub async fn execute(args: CallArgs) -> anyhow::Result<()> {
             wait_for_finalization(&client, result.tx_hash.as_deref()).await?;
         }
     } else {
-        anyhow::bail!("Transaction failed: {}", result.error.unwrap_or_else(|| "Unknown error".to_string()));
+        anyhow::bail!(
+            "Transaction failed: {}",
+            result.error.unwrap_or_else(|| "Unknown error".to_string())
+        );
     }
 
     Ok(())
@@ -176,7 +175,10 @@ async fn wait_for_finalization(
     let tx_hash = match tx_hash {
         Some(hash) => hash,
         None => {
-            println!("  {} No transaction hash available, skipping finalization wait", "⚠".yellow());
+            println!(
+                "  {} No transaction hash available, skipping finalization wait",
+                "⚠".yellow()
+            );
             return Ok(());
         }
     };
@@ -200,7 +202,10 @@ async fn wait_for_finalization(
                 "⚠".yellow(),
                 timeout.as_secs()
             ));
-            println!("  {}", "The transaction may still be finalized later".dimmed());
+            println!(
+                "  {}",
+                "The transaction may still be finalized later".dimmed()
+            );
             return Ok(());
         }
 
@@ -214,7 +219,10 @@ async fn wait_for_finalization(
         for ext in extrinsics.iter() {
             let ext_hash = format!("0x{}", hex::encode(ext.hash()));
 
-            if ext_hash == tx_hash || ext_hash.starts_with(tx_hash) || tx_hash.starts_with(&ext_hash) {
+            if ext_hash == tx_hash
+                || ext_hash.starts_with(tx_hash)
+                || tx_hash.starts_with(&ext_hash)
+            {
                 spinner.finish_with_message(format!(
                     "{} Transaction finalized in block #{}",
                     "✓".green().bold(),
@@ -247,11 +255,7 @@ fn format_number(n: u64) -> String {
 }
 
 fn find_metadata_for_contract(_address: &str) -> anyhow::Result<String> {
-    let possible_paths = vec![
-        "target/ink/metadata.json",
-        "contract.json",
-        "abi.json",
-    ];
+    let possible_paths = vec!["target/ink/metadata.json", "contract.json", "abi.json"];
 
     for path in possible_paths {
         if std::path::Path::new(path).exists() {

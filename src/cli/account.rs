@@ -50,7 +50,7 @@ async fn list_accounts() -> anyhow::Result<()> {
 
     // Development accounts
     println!("{}", "Development Accounts:".bold());
-    let dev_accounts = vec!["alice", "bob", "charlie", "dave", "eve", "ferdie"];
+    let dev_accounts = ["alice", "bob", "charlie", "dave", "eve", "ferdie"];
 
     for (idx, account) in dev_accounts.iter().enumerate() {
         let pair = glin_client::get_dev_account(account)?;
@@ -77,11 +77,14 @@ async fn list_accounts() -> anyhow::Result<()> {
 }
 
 async fn generate_account(name: &str) -> anyhow::Result<()> {
-    println!("{}", format!("Generating new account: {}", name).cyan().bold());
+    println!(
+        "{}",
+        format!("Generating new account: {}", name).cyan().bold()
+    );
 
     // Generate random mnemonic phrase
-    use subxt_signer::bip39::Mnemonic;
     use rand::Rng;
+    use subxt_signer::bip39::Mnemonic;
 
     // Generate random entropy for 12-word mnemonic (128 bits = 16 bytes)
     let mut entropy = [0u8; 16];
@@ -104,7 +107,10 @@ async fn generate_account(name: &str) -> anyhow::Result<()> {
     println!("  {}", phrase);
     println!();
     println!("{}", "⚠️  Store this seed phrase securely!".yellow());
-    println!("{}", "   Anyone with this phrase can access your funds.".dimmed());
+    println!(
+        "{}",
+        "   Anyone with this phrase can access your funds.".dimmed()
+    );
 
     Ok(())
 }
@@ -135,7 +141,7 @@ async fn show_account(name: &str) -> anyhow::Result<()> {
             println!();
             println!("{}", "Account Details:".bold());
             println!("  {} {}", "Name:".cyan(), name);
-            println!("  {} {}", "Type:".cyan(), "Development");
+            println!("  {} Development", "Type:".cyan());
             println!("  {} {}", "Address:".cyan(), address);
         }
         Err(_) => {

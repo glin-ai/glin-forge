@@ -35,13 +35,22 @@ async fn list_networks() -> anyhow::Result<()> {
     println!();
 
     let networks = vec![
-        ("testnet", "wss://testnet.glin.network", "GLIN Testnet", true),
+        (
+            "testnet",
+            "wss://testnet.glin.network",
+            "GLIN Testnet",
+            true,
+        ),
         ("mainnet", "wss://rpc.glin.network", "GLIN Mainnet", false),
         ("local", "ws://localhost:9944", "Local Node", false),
     ];
 
     for (name, rpc, description, is_default) in networks {
-        let marker = if is_default { " (default)".green() } else { "".normal() };
+        let marker = if is_default {
+            " (default)".green()
+        } else {
+            "".normal()
+        };
 
         println!("  {}{}", name.yellow().bold(), marker);
         println!("    {} {}", "Description:".cyan(), description);
@@ -53,7 +62,7 @@ async fn list_networks() -> anyhow::Result<()> {
 }
 
 async fn use_network(name: &str) -> anyhow::Result<()> {
-    let valid_networks = vec!["testnet", "mainnet", "local"];
+    let valid_networks = ["testnet", "mainnet", "local"];
 
     if !valid_networks.contains(&name) {
         anyhow::bail!(
@@ -63,7 +72,10 @@ async fn use_network(name: &str) -> anyhow::Result<()> {
         );
     }
 
-    println!("{}", format!("Switching to network: {}", name).cyan().bold());
+    println!(
+        "{}",
+        format!("Switching to network: {}", name).cyan().bold()
+    );
 
     let network_config = crate::config::load_network(name)?;
 
@@ -77,7 +89,11 @@ async fn use_network(name: &str) -> anyhow::Result<()> {
     }
 
     println!();
-    println!("{} Switched to {} network", "✓".green().bold(), name.yellow());
+    println!(
+        "{} Switched to {} network",
+        "✓".green().bold(),
+        name.yellow()
+    );
 
     Ok(())
 }

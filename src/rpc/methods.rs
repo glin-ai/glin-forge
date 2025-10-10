@@ -1,16 +1,11 @@
+use crate::rpc::types::{
+    CallParams, CallResult, ContractEvent, DeployParams, DeployResult, EstimateGasParams,
+    EstimateGasResult, GetBalanceParams, GetBalanceResult, GetBlockNumberParams,
+    GetBlockNumberResult, GetNetworkInfoParams, GetNetworkInfoResult, QueryParams, QueryResult,
+    RequestFaucetParams, RequestFaucetResult, WatchParams, WatchResult,
+};
 use anyhow::{Context, Result};
 use futures::StreamExt;
-use crate::rpc::types::{
-    DeployParams, DeployResult,
-    CallParams, CallResult,
-    QueryParams, QueryResult,
-    WatchParams, WatchResult, ContractEvent,
-    GetBalanceParams, GetBalanceResult,
-    RequestFaucetParams, RequestFaucetResult,
-    EstimateGasParams, EstimateGasResult,
-    GetBlockNumberParams, GetBlockNumberResult,
-    GetNetworkInfoParams, GetNetworkInfoResult,
-};
 
 /// Handle deploy RPC method
 pub async fn handle_deploy(params: DeployParams) -> Result<DeployResult> {
@@ -25,12 +20,18 @@ pub async fn handle_deploy(params: DeployParams) -> Result<DeployResult> {
         .context("Failed to parse metadata")?;
 
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Get signer account
     let signer = glin_client::get_dev_account(&params.account)
@@ -45,8 +46,9 @@ pub async fn handle_deploy(params: DeployParams) -> Result<DeployResult> {
         None,
         params.value,
         &signer,
-    ).await
-        .context("Failed to deploy contract")?;
+    )
+    .await
+    .context("Failed to deploy contract")?;
 
     // Convert to RPC result type
     Ok(DeployResult {
@@ -69,12 +71,18 @@ pub async fn handle_call(params: CallParams) -> Result<CallResult> {
         .context("Failed to parse metadata")?;
 
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Get signer account
     let signer = glin_client::get_dev_account(&params.account)
@@ -89,8 +97,9 @@ pub async fn handle_call(params: CallParams) -> Result<CallResult> {
         params.args,
         params.value,
         &signer,
-    ).await
-        .context("Failed to call contract")?;
+    )
+    .await
+    .context("Failed to call contract")?;
 
     // Convert to RPC result type
     Ok(CallResult {
@@ -111,12 +120,18 @@ pub async fn handle_query(params: QueryParams) -> Result<QueryResult> {
         .context("Failed to parse metadata")?;
 
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network for query
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Query contract using existing logic
     let result = crate::contract::query_contract(
@@ -126,8 +141,9 @@ pub async fn handle_query(params: QueryParams) -> Result<QueryResult> {
         &metadata,
         &params.method,
         params.args,
-    ).await
-        .context("Failed to query contract")?;
+    )
+    .await
+    .context("Failed to query contract")?;
 
     // Convert to RPC result type
     Ok(QueryResult {
@@ -140,19 +156,28 @@ pub async fn handle_query(params: QueryParams) -> Result<QueryResult> {
 /// Handle watch RPC method
 pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     let mut events = Vec::new();
     let limit = params.limit.unwrap_or(10);
 
     if params.follow {
         // Follow mode: subscribe to new blocks (limited to avoid blocking)
-        let mut blocks_sub = client.blocks().subscribe_finalized().await
+        let mut blocks_sub = client
+            .blocks()
+            .subscribe_finalized()
+            .await
             .context("Failed to subscribe to blocks")?;
 
         while let Some(block_result) = blocks_sub.next().await {
@@ -183,9 +208,10 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
                     }
 
                     // Extract event data
-                    let field_values = event.field_values().context("Failed to get field values")?;
-                    let data = serde_json::to_value(&field_values)
-                        .unwrap_or(serde_json::Value::Null);
+                    let field_values =
+                        event.field_values().context("Failed to get field values")?;
+                    let data =
+                        serde_json::to_value(&field_values).unwrap_or(serde_json::Value::Null);
 
                     events.push(ContractEvent {
                         block_number,
@@ -197,13 +223,16 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
         }
     } else {
         // Historical mode: get events from recent blocks
-        let latest_block = client.blocks().at_latest().await
+        let latest_block = client
+            .blocks()
+            .at_latest()
+            .await
             .context("Failed to get latest block")?;
         let latest_number = latest_block.number() as u64;
 
-        let start_block = params.from_block.unwrap_or_else(|| {
-            latest_number.saturating_sub(100)
-        });
+        let start_block = params
+            .from_block
+            .unwrap_or_else(|| latest_number.saturating_sub(100));
 
         for block_num in start_block..=latest_number {
             if events.len() >= limit {
@@ -211,7 +240,8 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
             }
 
             // Get block hash for this number using RPC
-            let rpc = glin_client::create_rpc_client(&network_config.rpc).await
+            let rpc = glin_client::create_rpc_client(&network_config.rpc)
+                .await
                 .context("Failed to create RPC client")?;
 
             let block_hash_opt: Option<subxt::utils::H256> = rpc
@@ -220,10 +250,12 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
                 .context("Failed to get block hash")?;
 
             if let Some(block_hash) = block_hash_opt {
-                let block = client.blocks().at(block_hash).await
+                let block = client
+                    .blocks()
+                    .at(block_hash)
+                    .await
                     .context("Failed to get block")?;
-                let block_events = block.events().await
-                    .context("Failed to get block events")?;
+                let block_events = block.events().await.context("Failed to get block events")?;
 
                 for event in block_events.iter() {
                     let event = event.context("Failed to decode event")?;
@@ -242,9 +274,10 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
                         }
 
                         // Extract event data
-                        let field_values = event.field_values().context("Failed to get field values")?;
-                        let data = serde_json::to_value(&field_values)
-                            .unwrap_or(serde_json::Value::Null);
+                        let field_values =
+                            event.field_values().context("Failed to get field values")?;
+                        let data =
+                            serde_json::to_value(&field_values).unwrap_or(serde_json::Value::Null);
 
                         events.push(ContractEvent {
                             block_number: block_num,
@@ -266,26 +299,31 @@ pub async fn handle_watch(params: WatchParams) -> Result<WatchResult> {
 
 /// Handle getBalance RPC method
 pub async fn handle_get_balance(params: GetBalanceParams) -> Result<GetBalanceResult> {
-    use subxt::utils::AccountId32;
     use std::str::FromStr;
+    use subxt::utils::AccountId32;
 
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Parse account ID
-    let account_id = AccountId32::from_str(&params.address)
-        .context("Failed to parse address")?;
+    let account_id = AccountId32::from_str(&params.address).context("Failed to parse address")?;
 
     // Query account info using dynamic storage
     let account_query = subxt::dynamic::storage(
         "System",
         "Account",
-        vec![subxt::dynamic::Value::from_bytes(&account_id.0)],
+        vec![subxt::dynamic::Value::from_bytes(account_id.0)],
     );
 
     let account_info = client
@@ -323,8 +361,8 @@ pub async fn handle_get_balance(params: GetBalanceParams) -> Result<GetBalanceRe
 
 /// Handle requestFaucet RPC method
 pub async fn handle_request_faucet(params: RequestFaucetParams) -> Result<RequestFaucetResult> {
-    use subxt::utils::AccountId32;
     use std::str::FromStr;
+    use subxt::utils::AccountId32;
 
     // Only allow faucet on testnet/local
     if params.network != "testnet" && params.network != "local" {
@@ -337,30 +375,35 @@ pub async fn handle_request_faucet(params: RequestFaucetParams) -> Result<Reques
     }
 
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Use Alice as faucet account
-    let faucet_signer = glin_client::get_dev_account("alice")
-        .context("Failed to get faucet account")?;
+    let faucet_signer =
+        glin_client::get_dev_account("alice").context("Failed to get faucet account")?;
 
     // Send tokens (100 GLIN)
     let amount = 100_000_000_000_000_000_000u128; // 100 GLIN with 18 decimals
 
     // Parse recipient address
-    let dest = AccountId32::from_str(&params.address)
-        .context("Failed to parse address")?;
+    let dest = AccountId32::from_str(&params.address).context("Failed to parse address")?;
 
     // Create transfer extrinsic
     let transfer_tx = subxt::dynamic::tx(
         "Balances",
         "transfer_keep_alive",
         vec![
-            subxt::dynamic::Value::from_bytes(&dest.0),
+            subxt::dynamic::Value::from_bytes(dest.0),
             subxt::dynamic::Value::u128(amount),
         ],
     );
@@ -402,15 +445,24 @@ pub async fn handle_estimate_gas(_params: EstimateGasParams) -> Result<EstimateG
 /// Handle getBlockNumber RPC method
 pub async fn handle_get_block_number(params: GetBlockNumberParams) -> Result<GetBlockNumberResult> {
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Get latest block number
-    let latest_block = client.blocks().at_latest().await
+    let latest_block = client
+        .blocks()
+        .at_latest()
+        .await
         .context("Failed to get latest block")?;
     let block_number = latest_block.number() as u64;
 
@@ -424,15 +476,24 @@ pub async fn handle_get_block_number(params: GetBlockNumberParams) -> Result<Get
 /// Handle getNetworkInfo RPC method
 pub async fn handle_get_network_info(params: GetNetworkInfoParams) -> Result<GetNetworkInfoResult> {
     // Get network configuration
-    let network_config = crate::config::load_network(&params.network)
-        .context(format!("Failed to load network config for: {}", params.network))?;
+    let network_config = crate::config::load_network(&params.network).context(format!(
+        "Failed to load network config for: {}",
+        params.network
+    ))?;
 
     // Connect to network
-    let client = glin_client::create_client(&network_config.rpc).await
-        .context(format!("Failed to connect to network: {}", network_config.rpc))?;
+    let client = glin_client::create_client(&network_config.rpc)
+        .await
+        .context(format!(
+            "Failed to connect to network: {}",
+            network_config.rpc
+        ))?;
 
     // Get latest block number
-    let latest_block = client.blocks().at_latest().await
+    let latest_block = client
+        .blocks()
+        .at_latest()
+        .await
         .context("Failed to get latest block")?;
     let block_number = latest_block.number() as u64;
 

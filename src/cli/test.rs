@@ -50,9 +50,7 @@ pub async fn execute(args: TestArgs) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
 
     if args.e2e {
-        cmd.arg("test")
-            .arg("--features")
-            .arg("e2e-tests");
+        cmd.arg("test").arg("--features").arg("e2e-tests");
     } else {
         cmd.arg("test");
     }
@@ -62,8 +60,7 @@ pub async fn execute(args: TestArgs) -> anyhow::Result<()> {
     }
 
     if args.nocapture {
-        cmd.arg("--")
-            .arg("--nocapture");
+        cmd.arg("--").arg("--nocapture");
     }
 
     cmd.current_dir(&args.path);
@@ -81,10 +78,7 @@ pub async fn execute(args: TestArgs) -> anyhow::Result<()> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     println!("{}", stdout);
 
-    println!(
-        "\n{} All tests passed!",
-        "✓".green().bold()
-    );
+    println!("\n{} All tests passed!", "✓".green().bold());
 
     Ok(())
 }

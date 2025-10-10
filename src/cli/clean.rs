@@ -50,7 +50,8 @@ fn clean_single_directory(args: &CleanArgs) -> Result<()> {
     let mut errors = Vec::new();
 
     // Determine what to clean
-    let clean_artifacts = args.all || args.artifacts || (!args.target && !args.types && !args.artifacts);
+    let clean_artifacts =
+        args.all || args.artifacts || (!args.target && !args.types && !args.artifacts);
     let clean_target = args.all || args.target;
     let clean_types = args.all || args.types;
 
@@ -193,7 +194,11 @@ async fn clean_workspace(args: &CleanArgs) -> Result<()> {
         if target_dir.exists() {
             match remove_dir_recursive(&target_dir) {
                 Ok(size) => {
-                    println!("{} Removed workspace target/ ({})", "✓".green(), format_size(size));
+                    println!(
+                        "{} Removed workspace target/ ({})",
+                        "✓".green(),
+                        format_size(size)
+                    );
                     workspace_cleaned += 1;
                 }
                 Err(e) => {
@@ -209,7 +214,11 @@ async fn clean_workspace(args: &CleanArgs) -> Result<()> {
         if artifacts_dir.exists() {
             match remove_dir_recursive(&artifacts_dir) {
                 Ok(size) => {
-                    println!("{} Removed workspace artifacts/ ({})", "✓".green(), format_size(size));
+                    println!(
+                        "{} Removed workspace artifacts/ ({})",
+                        "✓".green(),
+                        format_size(size)
+                    );
                     workspace_cleaned += 1;
                 }
                 Err(e) => {
@@ -223,7 +232,12 @@ async fn clean_workspace(args: &CleanArgs) -> Result<()> {
     println!("{}", "=== Clean Summary ===".bold());
     println!("  {} {} contract(s) cleaned", "✓".green(), cleaned_count);
     if workspace_cleaned > 0 {
-        println!("  {} {} workspace director{} cleaned", "✓".green(), workspace_cleaned, if workspace_cleaned == 1 { "y" } else { "ies" });
+        println!(
+            "  {} {} workspace director{} cleaned",
+            "✓".green(),
+            workspace_cleaned,
+            if workspace_cleaned == 1 { "y" } else { "ies" }
+        );
     }
 
     if !failed.is_empty() {

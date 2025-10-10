@@ -35,7 +35,7 @@ pub fn generate_typescript_types(contract_name: &str, abi: &JsonValue) -> Result
         let return_type = message["returnType"]
             .as_object()
             .and_then(|rt| rt.get("type"))
-            .map(|t| parse_type(t))
+            .map(parse_type)
             .unwrap_or_else(|| "void".to_string());
 
         let method_sig = format!("  {}: ({}) => Promise<{}>", label, args, return_type);

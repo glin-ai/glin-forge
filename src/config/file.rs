@@ -36,7 +36,7 @@ fn default_network() -> String {
     "testnet".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PathsConfig {
     #[serde(default = "default_contracts_path")]
     pub contracts: String,
@@ -74,6 +74,19 @@ fn default_tests_path() -> String {
 }
 fn default_cache_path() -> String {
     "./.cache".to_string()
+}
+
+impl Default for PathsConfig {
+    fn default() -> Self {
+        Self {
+            contracts: default_contracts_path(),
+            artifacts: default_artifacts_path(),
+            types: default_types_path(),
+            scripts: default_scripts_path(),
+            tests: default_tests_path(),
+            cache: default_cache_path(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -243,16 +256,14 @@ fn find_config_file() -> Result<PathBuf> {
         }
     }
 
-    anyhow::bail!(
-        "No configuration file found. Create glinforge.config.ts in your project root."
-    )
+    anyhow::bail!("No configuration file found. Create glinforge.config.ts in your project root.")
 }
 
 /// Load TypeScript config file
 fn load_typescript_config(path: &Path) -> Result<FileConfig> {
     // Use ts-node to execute TypeScript config
     let output = Command::new("node")
-        .args(&[
+        .args([
             "-e",
             &format!(
                 r#"
@@ -282,7 +293,7 @@ fn load_typescript_config(path: &Path) -> Result<FileConfig> {
 /// Load JavaScript config file
 fn load_javascript_config(path: &Path) -> Result<FileConfig> {
     let output = Command::new("node")
-        .args(&[
+        .args([
             "-e",
             &format!(
                 r#"
@@ -312,8 +323,8 @@ fn load_json_config(path: &Path) -> Result<FileConfig> {
     let json_str = std::fs::read_to_string(path)
         .with_context(|| format!("Failed to read config file: {}", path.display()))?;
 
-    let config: FileConfig = serde_json::from_str(&json_str)
-        .context("Failed to parse JSON configuration")?;
+    let config: FileConfig =
+        serde_json::from_str(&json_str).context("Failed to parse JSON configuration")?;
 
     Ok(config)
 }
