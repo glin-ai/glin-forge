@@ -1,6 +1,6 @@
 [package]
 name = "glin-forge"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["GLIN AI <dev@glin.ai>"]
 description = "Smart contract development CLI for GLIN Network - Build, deploy, and interact with ink! smart contracts"

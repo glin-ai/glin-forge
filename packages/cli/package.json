@@ -1,6 +1,6 @@
 {
   "name": "glin-forge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Hardhat-style development environment for GLIN Network smart contracts",
   "main": "index.js",
   "bin": {

@@ -1,8 +1,8 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packages": {
-    "glin-forge": "0.2.0",
-    "forge-sdk": "0.2.0",
-    "forge-testing": "0.2.0"
+    "glin-forge": "0.2.1",
+    "forge-sdk": "0.2.1",
+    "forge-testing": "0.2.1"
   }
 }
