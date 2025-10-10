@@ -50,7 +50,7 @@ export async function getCurrentTimestamp(): Promise<number> {
   if (!config.api) {
     throw new Error('Time utilities not initialized. Call initTime() first.');
   }
-  const now = await config.api.query.timestamp.now();
+  const now: any = await config.api.query.timestamp.now();
   return now.toNumber();
 }
 

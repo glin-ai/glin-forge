@@ -26,7 +26,7 @@ export async function getBalance(account: string | KeyringPair): Promise<bigint>
   }
 
   const address = typeof account === 'string' ? account : account.address;
-  const accountInfo = await api.query.system.account(address);
+  const accountInfo: any = await api.query.system.account(address);
   return BigInt(accountInfo.data.free.toString());
 }
 
@@ -48,7 +48,7 @@ export async function getReservedBalance(
   }
 
   const address = typeof account === 'string' ? account : account.address;
-  const accountInfo = await api.query.system.account(address);
+  const accountInfo: any = await api.query.system.account(address);
   return BigInt(accountInfo.data.reserved.toString());
 }
 

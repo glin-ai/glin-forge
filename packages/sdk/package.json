@@ -1,5 +1,5 @@
 {
-  "name": "@glin-forge/sdk",
+  "name": "@glin-ai/forge-sdk",
   "version": "0.2.0",
   "description": "TypeScript SDK for glin-forge - Hardhat-style contract deployment and interaction",
   "main": "dist/index.js",

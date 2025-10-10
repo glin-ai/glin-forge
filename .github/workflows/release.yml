@@ -82,7 +82,7 @@ jobs:
         shell: bash
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.TARBALL }}
           path: target/${{ matrix.platform.target }}/release/${{ env.TARBALL }}
@@ -96,16 +96,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: '*.tar.gz'
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
-          files: dist/**/*.tar.gz
+          files: dist/*.tar.gz
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -124,7 +126,7 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish @glin-forge/sdk
+      - name: Publish @glin-ai/forge-sdk
         run: |
           cd packages/sdk
           npm install
@@ -133,7 +135,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @glin-forge/testing
+      - name: Publish @glin-ai/forge-testing
         run: |
           cd packages/testing
           npm install

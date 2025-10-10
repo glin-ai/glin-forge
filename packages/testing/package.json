@@ -1,5 +1,5 @@
 {
-  "name": "@glin-forge/testing",
+  "name": "@glin-ai/forge-testing",
   "version": "0.2.0",
   "description": "Testing utilities for glin-forge smart contracts",
   "main": "dist/index.js",
@@ -29,10 +29,10 @@
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
-    "@glin-forge/sdk": "^0.1.0"
+    "@glin-ai/forge-sdk": "^0.2.0"
   },
   "peerDependenciesMeta": {
-    "@glin-forge/sdk": {
+    "@glin-ai/forge-sdk": {
       "optional": true
     }
   }
